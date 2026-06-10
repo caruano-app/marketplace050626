@@ -88,11 +88,12 @@ export function MerchantDashboardApp({ products, quotes }: MerchantDashboardAppP
             <a className="grid min-h-11 place-items-center rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white shadow-lg" href="/dashboard/lojista/produtos/novo">
               Novo Produto
             </a>
-            {["Novo Story/Video", "Ver Vendas"].map((label) => (
-              <button className="min-h-11 rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white shadow-lg" key={label} type="button">
-                {label}
-              </button>
-            ))}
+            <button className="min-h-11 rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white shadow-lg" type="button">
+              Novo Story/Video
+            </button>
+            <a className="grid min-h-11 place-items-center rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white shadow-lg" href="/dashboard/lojista/pedidos">
+              Ver Vendas
+            </a>
           </div>
         ) : null}
         <button className="grid h-14 w-14 place-items-center rounded-full bg-[#ffd700] text-3xl font-black text-neutral-950 shadow-xl" onClick={() => setFabOpen((current) => !current)} type="button">

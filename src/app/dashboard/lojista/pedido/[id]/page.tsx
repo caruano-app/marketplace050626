@@ -3,6 +3,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { OrderPrintActions } from "@/components/print/order-print-actions";
 import { getOrderPrintData } from "@/lib/data/order-print";
 
+export const dynamic = "force-dynamic";
+
 type MerchantOrderPageProps = {
   params: {
     id: string;

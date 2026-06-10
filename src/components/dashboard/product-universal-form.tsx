@@ -13,7 +13,7 @@ type DynamicField = {
   placeholder: string;
 };
 
-const allUnits = ["UN", "KG", "CX", "DZ", "FD", "LT"];
+const allUnits = ["UN", "KG", "CX", "DZ", "FD", "LT", "MT"];
 
 function normalize(value: string) {
   return value
@@ -27,6 +27,7 @@ function segmentForCategory(category: CategoriaMestre | undefined) {
 
   if (/(aliment|bebida|mercado|hortifruti|comida|mercearia|padaria)/.test(source)) return "alimentacao";
   if (/(eletron|eletro|celular|informatica|energia)/.test(source)) return "eletronicos";
+  if (/(construc|construcao|tecido|aviamento|ferramenta|material)/.test(source)) return "construcao";
   if (/(moda|femin|mascul|infantil|jeans|fitness|camisaria|calcado|textil|confeccao)/.test(source)) return "moda";
 
   return "geral";
@@ -35,9 +36,9 @@ function segmentForCategory(category: CategoriaMestre | undefined) {
 function fieldsForSegment(segment: string): DynamicField[] {
   if (segment === "alimentacao") {
     return [
-      { key: "validade", label: "Validade", placeholder: "Ex: 30/12/2026" },
-      { key: "peso_liquido", label: "Peso Liquido", placeholder: "Ex: 1kg, 500g, 12 unidades" },
-      { key: "conservacao", label: "Conservacao", placeholder: "Ex: manter refrigerado" },
+      { key: "data_validade", label: "Data de Validade", placeholder: "Ex: 30/12/2026" },
+      { key: "informacao_nutricional", label: "Informacao Nutricional", placeholder: "Ex: tabela nutricional resumida" },
+      { key: "temperatura_armazenamento", label: "Temperatura de Armazenamento", placeholder: "Ex: ambiente, refrigerado" },
     ];
   }
 
@@ -51,9 +52,18 @@ function fieldsForSegment(segment: string): DynamicField[] {
 
   if (segment === "moda") {
     return [
-      { key: "material_tecido", label: "Material/Tecido", placeholder: "Ex: jeans, algodao, malha" },
-      { key: "tipo_gola", label: "Tipo de Gola", placeholder: "Ex: polo, redonda, V" },
+      { key: "tecido_composicao", label: "Tecido/Composicao", placeholder: "Ex: 100% algodao, jeans, malha" },
       { key: "grade", label: "Grade", placeholder: "Ex: P ao GG, 36 ao 46" },
+      { key: "gola", label: "Gola", placeholder: "Ex: redonda, polo, V" },
+      { key: "manga", label: "Manga", placeholder: "Ex: curta, longa, regata" },
+    ];
+  }
+
+  if (segment === "construcao") {
+    return [
+      { key: "largura_rolo", label: "Largura do rolo", placeholder: "Ex: 1,60m" },
+      { key: "gramatura", label: "Gramatura", placeholder: "Ex: 180g/m2" },
+      { key: "composicao", label: "Composicao", placeholder: "Ex: algodao, poliester, elastano" },
     ];
   }
 
@@ -67,15 +77,17 @@ function fieldsForSegment(segment: string): DynamicField[] {
 function unitsForSegment(segment: string) {
   if (segment === "alimentacao") return ["UN", "KG", "CX", "FD", "LT"];
   if (segment === "moda") return ["UN", "DZ", "FD", "CX"];
+  if (segment === "construcao") return ["UN", "MT", "KG", "CX", "FD"];
   return allUnits;
 }
 
 export function ProductUniversalForm({ categories }: ProductUniversalFormProps) {
-  const [categoryId, setCategoryId] = useState(categories[0]?.id ? String(categories[0].id) : "");
+  const [categoryId, setCategoryId] = useState("");
   const selectedCategory = categories.find((category) => String(category.id) === categoryId);
   const segment = segmentForCategory(selectedCategory);
   const dynamicFields = useMemo(() => fieldsForSegment(segment), [segment]);
   const availableUnits = unitsForSegment(segment);
+  const categorySelected = Boolean(selectedCategory);
 
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
@@ -88,13 +100,18 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
   const [heightCm, setHeightCm] = useState("");
   const [widthCm, setWidthCm] = useState("");
   const [depthCm, setDepthCm] = useState("");
+  const [variationName, setVariationName] = useState("Padrao");
+  const [variationEan13, setVariationEan13] = useState("");
+  const [variationStock, setVariationStock] = useState("");
   const [allowExport, setAllowExport] = useState(true);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [technicalSpecs, setTechnicalSpecs] = useState<Record<string, string>>({});
   const [suggestionOpen, setSuggestionOpen] = useState(false);
   const [suggestionName, setSuggestionName] = useState("");
   const [suggestionNiche, setSuggestionNiche] = useState("");
   const [suggestionContext, setSuggestionContext] = useState("");
   const [status, setStatus] = useState("");
+  const [toast, setToast] = useState("");
   const [saving, setSaving] = useState(false);
 
   function updateCategory(nextCategoryId: string) {
@@ -107,33 +124,41 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
 
   async function submitProduct(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!categorySelected) {
+      setStatus("Selecione a categoria oficial antes de preencher o produto.");
+      return;
+    }
+
     setSaving(true);
     setStatus("Salvando produto...");
+    setToast("");
+
+    const formData = new FormData();
+    formData.set("categoryId", String(Number(categoryId)));
+    formData.set("categoryName", selectedCategory?.nome_categoria || "");
+    formData.set("name", name);
+    formData.set("sku", sku);
+    formData.set("description", description);
+    formData.set("unitMeasure", unitMeasure);
+    formData.set("retailPrice", retailPrice);
+    formData.set("wholesalePrice", wholesalePrice);
+    formData.set("wholesaleMinQuantity", wholesaleMinQuantity);
+    formData.set("weightKg", weightKg);
+    formData.set("heightCm", heightCm);
+    formData.set("widthCm", widthCm);
+    formData.set("depthCm", depthCm);
+    formData.set("variationName", variationName);
+    formData.set("variationEan13", variationEan13.replace(/\D/g, ""));
+    formData.set("variationStock", variationStock);
+    formData.set("allowExport", String(allowExport));
+    formData.set("technicalSpecs", JSON.stringify(technicalSpecs));
+    imageFiles.forEach((file) => formData.append("images", file));
 
     const response = await fetch("/api/merchant/products", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        categoryId: Number(categoryId),
-        categoryName: selectedCategory?.nome_categoria || "",
-        name,
-        sku,
-        description,
-        unitMeasure,
-        retailPrice: Number(retailPrice.replace(",", ".")),
-        wholesalePrice: wholesalePrice ? Number(wholesalePrice.replace(",", ".")) : null,
-        wholesaleMinQuantity: wholesaleMinQuantity ? Number(wholesaleMinQuantity) : null,
-        weightKg: Number(weightKg.replace(",", ".")),
-        heightCm: Number(heightCm.replace(",", ".")),
-        widthCm: Number(widthCm.replace(",", ".")),
-        depthCm: Number(depthCm.replace(",", ".")),
-        allowExport,
-        technicalSpecs,
-      }),
+      body: formData,
     });
-    const payload = (await response.json()) as { error?: string; id?: string };
+    const payload = (await response.json()) as { error?: string; id?: string; warnings?: string[] };
 
     if (!response.ok || payload.error) {
       setStatus(payload.error || "Nao foi possivel salvar o produto.");
@@ -141,7 +166,8 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
       return;
     }
 
-    setStatus("Produto enviado para o catalogo Caruano.");
+    setStatus(payload.warnings?.length ? payload.warnings.join(" | ") : "Produto enviado para o catalogo Caruano.");
+    setToast("Produto cadastrado com sucesso.");
     setName("");
     setSku("");
     setDescription("");
@@ -152,6 +178,10 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
     setHeightCm("");
     setWidthCm("");
     setDepthCm("");
+    setVariationName("Padrao");
+    setVariationEan13("");
+    setVariationStock("");
+    setImageFiles([]);
     setTechnicalSpecs({});
     setSaving(false);
   }
@@ -195,7 +225,8 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
         <section className="rounded-[12px] bg-white p-4 shadow-sm">
           <label className="block text-sm font-black uppercase text-neutral-950">
             Categoria oficial
-            <select className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 bg-white px-3 text-base font-bold outline-none" onChange={(event) => updateCategory(event.target.value)} value={categoryId}>
+            <select className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 bg-white px-3 text-base font-bold outline-none" onChange={(event) => updateCategory(event.target.value)} required value={categoryId}>
+              <option value="">Selecione primeiro a categoria</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.nome_categoria}
@@ -208,7 +239,7 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
           </button>
         </section>
 
-        <section className="rounded-[12px] bg-white p-4 shadow-sm">
+        <fieldset className="rounded-[12px] bg-white p-4 shadow-sm disabled:opacity-50" disabled={!categorySelected}>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm font-black uppercase text-neutral-950">
               Nome do produto
@@ -223,9 +254,9 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
             Descricao
             <textarea className="mt-2 min-h-28 w-full rounded-[8px] border border-neutral-300 p-3 text-base outline-none" onChange={(event) => setDescription(event.target.value)} value={description} />
           </label>
-        </section>
+        </fieldset>
 
-        <section className="rounded-[12px] bg-white p-4 shadow-sm">
+        <fieldset className="rounded-[12px] bg-white p-4 shadow-sm disabled:opacity-50" disabled={!categorySelected}>
           <h2 className="text-lg font-black uppercase text-neutral-950">Unidades e preco</h2>
           <div className="mt-3 grid gap-4 md:grid-cols-4">
             <label className="text-sm font-black uppercase text-neutral-950">
@@ -249,9 +280,9 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
               <input className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none" inputMode="numeric" onChange={(event) => setWholesaleMinQuantity(event.target.value)} placeholder="Ex: 12" value={wholesaleMinQuantity} />
             </label>
           </div>
-        </section>
+        </fieldset>
 
-        <section className="rounded-[12px] bg-white p-4 shadow-sm">
+        <fieldset className="rounded-[12px] bg-white p-4 shadow-sm disabled:opacity-50" disabled={!categorySelected}>
           <div>
             <h2 className="text-lg font-black uppercase text-neutral-950">Frete e dimensoes obrigatorias</h2>
             <p className="mt-1 text-sm font-bold text-neutral-600">
@@ -304,9 +335,70 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
               />
             </label>
           </div>
-        </section>
+        </fieldset>
 
-        <section className="rounded-[12px] bg-white p-4 shadow-sm">
+        <fieldset className="rounded-[12px] bg-white p-4 shadow-sm disabled:opacity-50" disabled={!categorySelected}>
+          <h2 className="text-lg font-black uppercase text-neutral-950">Imagens do produto</h2>
+          <p className="mt-1 text-sm font-bold text-neutral-600">Envie ate 5 fotos. Elas serao salvas no bucket products do Supabase Storage.</p>
+          <label className="mt-3 grid min-h-16 cursor-pointer place-items-center rounded-[8px] border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 text-center text-sm font-black uppercase text-neutral-700">
+            Selecionar fotos
+            <span className="mt-1 block text-xs font-bold normal-case text-neutral-500">
+              {imageFiles.length ? `${imageFiles.length} de 5 arquivo(s) selecionado(s)` : "JPG, PNG ou WEBP"}
+            </span>
+            <input
+              accept="image/*"
+              className="sr-only"
+              multiple
+              onChange={(event) => setImageFiles(Array.from(event.target.files || []).slice(0, 5))}
+              type="file"
+            />
+          </label>
+        </fieldset>
+
+        <fieldset className="rounded-[12px] bg-white p-4 shadow-sm disabled:opacity-50" disabled={!categorySelected}>
+          <h2 className="text-lg font-black uppercase text-neutral-950">Variacao inicial e EAN-13</h2>
+          <p className="mt-1 text-sm font-bold text-neutral-600">
+            O codigo de barras EAN-13 e obrigatorio para o produto ficar elegivel para exportacao futura para Amazon, Mercado Livre e outros marketplaces.
+          </p>
+          <div className="mt-3 grid gap-4 md:grid-cols-3">
+            <label className="text-sm font-black uppercase text-neutral-950">
+              Nome da variacao
+              <input
+                className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none"
+                onChange={(event) => setVariationName(event.target.value)}
+                placeholder="Ex: P Preto, 1KG, 110V"
+                required
+                value={variationName}
+              />
+            </label>
+            <label className="text-sm font-black uppercase text-neutral-950">
+              Codigo de barras EAN-13
+              <input
+                className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none"
+                inputMode="numeric"
+                maxLength={13}
+                minLength={13}
+                onChange={(event) => setVariationEan13(event.target.value.replace(/\D/g, "").slice(0, 13))}
+                placeholder="7890000000000"
+                required
+                value={variationEan13}
+              />
+            </label>
+            <label className="text-sm font-black uppercase text-neutral-950">
+              Estoque inicial
+              <input
+                className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none"
+                inputMode="numeric"
+                onChange={(event) => setVariationStock(event.target.value.replace(/\D/g, ""))}
+                placeholder="Ex: 30"
+                required
+                value={variationStock}
+              />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-[12px] bg-white p-4 shadow-sm disabled:opacity-50" disabled={!categorySelected}>
           <h2 className="text-lg font-black uppercase text-neutral-950">Campos especificos: {selectedCategory?.nome_categoria || "Categoria"}</h2>
           <div className="mt-3 grid gap-4 md:grid-cols-3">
             {dynamicFields.map((field) => (
@@ -325,13 +417,21 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
             <input checked={allowExport} onChange={(event) => setAllowExport(event.target.checked)} type="checkbox" />
             Quero preparar este produto para exportacao futura. EAN-13 sera exigido nas variacoes.
           </label>
-        </section>
+        </fieldset>
 
-        <button className="min-h-12 w-full rounded-[8px] bg-[#FFD700] px-4 text-sm font-black uppercase text-neutral-950 shadow-sm disabled:opacity-60" disabled={saving} type="submit">
-          {saving ? "Salvando..." : "Salvar produto"}
-        </button>
+        <div className="sticky bottom-0 z-30 -mx-4 border-t border-neutral-200 bg-white/95 p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur">
+          <button className="min-h-12 w-full rounded-[8px] bg-[#FFD700] px-4 text-sm font-black uppercase text-neutral-950 shadow-sm disabled:opacity-60" disabled={saving || !categorySelected} type="submit">
+            {saving ? "Salvando..." : "Salvar produto"}
+          </button>
+        </div>
         {status ? <p className="rounded-[8px] bg-white p-3 text-center text-sm font-black text-neutral-700">{status}</p> : null}
       </form>
+
+      {toast ? (
+        <div className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 rounded-[8px] bg-neutral-950 px-4 py-3 text-center text-sm font-black uppercase text-white shadow-xl">
+          {toast}
+        </div>
+      ) : null}
 
       {suggestionOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/50 md:place-items-center">

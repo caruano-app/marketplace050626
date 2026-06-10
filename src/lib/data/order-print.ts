@@ -26,8 +26,13 @@ export type OrderPrintData = {
   weightKg: number;
   volume: string;
   trackingCode: string;
+  trackingUrl: string;
   items: OrderPrintItem[];
 };
+
+function getSiteUrl() {
+  return (process.env.NEXT_PUBLIC_SITE_URL || "https://caruano.com").replace(/\/$/, "");
+}
 
 const fallbackOrder: OrderPrintData = {
   id: "pedido-demo",
@@ -45,6 +50,7 @@ const fallbackOrder: OrderPrintData = {
   weightKg: 1.2,
   volume: "01/01",
   trackingCode: "CRN-DEMO-0001",
+  trackingUrl: `${getSiteUrl()}/conferencia/pedido-demo`,
   items: [
     {
       id: "item-demo",
@@ -163,6 +169,7 @@ export async function getOrderPrintData(orderId: string): Promise<OrderPrintData
     weightKg,
     volume: "01/01",
     trackingCode: `CRN-${row.id.slice(0, 8).toUpperCase()}`,
+    trackingUrl: `${getSiteUrl()}/conferencia/${row.id}`,
     items,
   };
 }

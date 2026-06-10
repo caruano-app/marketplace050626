@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductDetailClient } from "@/components/product/product-detail-client";
 import { TrackableQrCode } from "@/components/qrcode/trackable-qr-code";
-import { getProductDetail } from "@/lib/data/product-detail";
+import { getProductDetail, type WholesalePriceRule } from "@/lib/data/product-detail";
 import { getFeaturedProducts } from "@/lib/data/products";
 import type { CategoriaResumo, LojistaResumo, ProdutoVitrine, SubcategoriaResumo } from "@/types/database";
 
@@ -203,9 +203,40 @@ function TechnicalSpecifications({ product }: { product: ProdutoVitrine }) {
   );
 }
 
+function WholesalePriceTable({ pricing, retailPrice, unit }: { pricing: WholesalePriceRule[]; retailPrice: number; unit?: string | null }) {
+  if (!pricing.length) {
+    return null;
+  }
+
+  const firstRule = pricing[0];
+  const retailLimit = Math.max(Number(firstRule.quantidade_minima || 1) - 1, 1);
+
+  return (
+    <section className="rounded-[8px] border border-[#f6b900] bg-[#fff8d6] p-4">
+      <h2 className="text-lg font-black uppercase text-neutral-950">Tabela de precos</h2>
+      <div className="mt-3 overflow-hidden rounded-[8px] border border-[#f6b900] bg-white">
+        <div className="grid grid-cols-[1fr_150px] gap-3 bg-[#ffd700] px-3 py-2 text-sm font-black uppercase text-neutral-950">
+          <span>Quantidade</span>
+          <span>Preco</span>
+        </div>
+        <div className="grid grid-cols-[1fr_150px] gap-3 px-3 py-2 text-sm font-bold text-neutral-800">
+          <span>1 a {retailLimit} {unit || "UN"}</span>
+          <span>{formatPrice(retailPrice)}</span>
+        </div>
+        {pricing.map((rule) => (
+          <div className="grid grid-cols-[1fr_150px] gap-3 border-t border-neutral-200 px-3 py-2 text-sm font-bold text-neutral-800" key={`${rule.quantidade_minima}-${rule.preco_unitario_atacado}`}>
+            <span>Acima de {rule.quantidade_minima} {unit || "UN"}</span>
+            <span>{formatPrice(Number(rule.preco_unitario_atacado || 0))}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [{ product, variations }, relatedProducts] = await Promise.all([
+  const [{ product, variations, wholesalePricing }, relatedProducts] = await Promise.all([
     getProductDetail(slug),
     getFeaturedProducts(),
   ]);
@@ -265,6 +296,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <p className="max-w-[600px] text-xl leading-relaxed text-neutral-700">
               {product.descricao_completa || "Breve descricao do produto descricao do produto descricao do produto."}
             </p>
+
+            <WholesalePriceTable pricing={wholesalePricing} retailPrice={Number(product.preco_base_varejo || 0)} unit={product.unidade_medida} />
 
             <ProductDetailClient
               categoryName={category.nome_categoria}

@@ -27,6 +27,25 @@ Porta esperada:
 PORT=3000
 ```
 
+## Fluxo padrao apos cada ajuste
+
+Todo ajuste de codigo deve seguir este fluxo antes de ir para producao:
+
+```bash
+npm run build
+git add .
+git commit -m "Descricao objetiva da mudanca"
+git push origin main
+```
+
+Com o GitHub App do Coolify conectado ao repositorio, o `git push origin main` deve disparar o auto-deploy.
+
+Use o botao `Redeploy` no Coolify somente como fallback quando:
+
+- o webhook nao disparar automaticamente;
+- alguma variavel de ambiente for alterada no painel;
+- for necessario repetir o deploy do mesmo commit.
+
 ## GitHub
 
 Depois de instalar o Git no Windows, execute:

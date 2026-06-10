@@ -1,6 +1,11 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProdutoVitrine, VariacaoProduto } from "@/types/database";
 
+export type WholesalePriceRule = {
+  quantidade_minima: number;
+  preco_unitario_atacado: number;
+};
+
 const fallbackProduct: ProdutoVitrine = {
   id: "fallback-1",
   lojista_id: "fallback-lojista",
@@ -59,6 +64,7 @@ function isUuid(value: string) {
 export async function getProductDetail(slug: string): Promise<{
   product: ProdutoVitrine;
   variations: VariacaoProduto[];
+  wholesalePricing: WholesalePriceRule[];
 }> {
   const supabase = createSupabaseServerClient();
 
@@ -66,6 +72,12 @@ export async function getProductDetail(slug: string): Promise<{
     return {
       product: fallbackProduct,
       variations: fallbackVariations,
+      wholesalePricing: [
+        {
+          quantidade_minima: 12,
+          preco_unitario_atacado: 49.9,
+        },
+      ],
     };
   }
 
@@ -84,6 +96,12 @@ export async function getProductDetail(slug: string): Promise<{
     return {
       product: fallbackProduct,
       variations: fallbackVariations,
+      wholesalePricing: [
+        {
+          quantidade_minima: 12,
+          preco_unitario_atacado: 49.9,
+        },
+      ],
     };
   }
 
@@ -93,8 +111,15 @@ export async function getProductDetail(slug: string): Promise<{
     .eq("produto_id", product.id)
     .order("criado_em", { ascending: true });
 
+  const { data: wholesalePricing, error: wholesaleError } = await supabase
+    .from("precificacao_atacado")
+    .select("quantidade_minima,preco_unitario_atacado")
+    .eq("produto_id", product.id)
+    .order("quantidade_minima", { ascending: true });
+
   return {
     product: product as ProdutoVitrine,
     variations: variationsError || !variations?.length ? fallbackVariations : (variations as VariacaoProduto[]),
+    wholesalePricing: wholesaleError || !wholesalePricing ? [] : (wholesalePricing as WholesalePriceRule[]),
   };
 }

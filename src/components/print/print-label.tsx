@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import type { OrderPrintData } from "@/lib/data/order-print";
 
 type PrintLabelProps = {
@@ -15,8 +16,22 @@ function Barcode({ value }: { value: string }) {
   );
 }
 
-function QrCode() {
-  return <div className="print-qr" aria-label="QR Code" />;
+const logoDataUrl =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='18' fill='%23ffd700'/%3E%3Ctext x='48' y='58' text-anchor='middle' font-family='Arial' font-size='42' font-weight='900' fill='%23171717'%3EC%3C/text%3E%3C/svg%3E";
+
+function QrCode({ value }: { value: string }) {
+  return (
+    <div className="grid h-[3cm] w-[3cm] place-items-center bg-white" aria-label="QR Code de conferencia">
+      <QRCodeSVG
+        bgColor="#ffffff"
+        fgColor="#171717"
+        imageSettings={{ src: logoDataUrl, height: 28, width: 28, excavate: true }}
+        level="H"
+        size={112}
+        value={value}
+      />
+    </div>
+  );
 }
 
 export const PrintLabel = forwardRef<HTMLDivElement, PrintLabelProps>(function PrintLabel({ order }, ref) {
@@ -46,8 +61,8 @@ export const PrintLabel = forwardRef<HTMLDivElement, PrintLabelProps>(function P
             <p>Casa 01</p>
           </div>
           <div className="grid place-items-center">
-            <QrCode />
-            <p className="mt-1 text-center text-xs font-black">caruano.com/{order.storeName.toLowerCase().replace(/\s+/g, "-")}</p>
+            <QrCode value={order.trackingUrl} />
+            <p className="mt-1 text-center text-xs font-black">conferencia caruano</p>
           </div>
         </section>
         <div className="flex items-center justify-center">
