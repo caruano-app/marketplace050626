@@ -126,6 +126,7 @@ function ProductGallery({ product }: { product: ProdutoVitrine }) {
 
 function DimensionsAccordion({ product }: { product: ProdutoVitrine }) {
   const dimensions = product.dimensoes_cm || {};
+  const depth = dimensions.P ?? dimensions.C ?? 0;
 
   return (
     <details className="rounded-[8px] border border-neutral-400 bg-[#fffbd1] p-5">
@@ -133,7 +134,7 @@ function DimensionsAccordion({ product }: { product: ProdutoVitrine }) {
       <div className="mt-4 grid grid-cols-4 gap-3 text-sm font-bold text-neutral-700">
         <span>Largura: {dimensions.L ?? 0} cm</span>
         <span>Altura: {dimensions.A ?? 0} cm</span>
-        <span>Comprimento: {dimensions.C ?? 0} cm</span>
+        <span>Profundidade: {depth} cm</span>
         <span>Peso: {product.peso_kg ?? 0} kg</span>
       </div>
     </details>
@@ -165,6 +166,19 @@ function flattenSpecifications(value: Record<string, unknown> | null | undefined
 
 function labelize(value: string) {
   return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function isPremiumPartner(product: ProdutoVitrine) {
+  const specs = product.especificacoes_tecnicas || {};
+  const partnerStore = specs.partner_store;
+  const partnerFlags = specs.parceiro_premium;
+
+  if (typeof partnerFlags === "boolean") return partnerFlags;
+  if (typeof partnerStore === "object" && partnerStore && "premium" in partnerStore) {
+    return Boolean((partnerStore as { premium?: unknown }).premium);
+  }
+
+  return false;
 }
 
 function TechnicalSpecifications({ product }: { product: ProdutoVitrine }) {
@@ -200,6 +214,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const category = getCategory(subcategory);
   const storeName = getStoreName(product);
   const storeSlug = getStoreSlug(product);
+  const premiumPartner = isPremiumPartner(product);
 
   return (
     <div className="min-h-screen bg-white">
@@ -239,8 +254,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 {formatPrice(product.preco_base_varejo)}
                 {product.unidade_medida ? <span className="ml-2 text-xl text-neutral-600">/{product.unidade_medida}</span> : null}
               </p>
-              <a className="mt-3 inline-flex min-h-11 items-center rounded-[8px] border border-[#f6b900] bg-[#fff8d6] px-4 text-sm font-black uppercase text-neutral-950" href={`/loja/${storeSlug}`}>
-                Vendido e entregue por: {product.vendido_e_entregue_por || storeName}
+              <a className="mt-3 inline-flex min-h-11 flex-wrap items-center gap-2 rounded-[8px] border border-[#f6b900] bg-[#fff8d6] px-4 text-sm font-black uppercase text-neutral-950" href={`/loja/${storeSlug}`}>
+                <span>Vendido e entregue por: {product.vendido_e_entregue_por || storeName}</span>
+                {premiumPartner ? (
+                  <span className="rounded-full bg-neutral-950 px-2 py-1 text-[11px] text-[#FFD700]">Verificado</span>
+                ) : null}
               </a>
             </div>
 

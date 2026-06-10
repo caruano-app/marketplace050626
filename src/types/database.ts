@@ -56,6 +56,7 @@ export type ProdutoVitrine = {
     L?: number;
     A?: number;
     C?: number;
+    P?: number;
   } | null;
   lojistas: LojistaResumo | LojistaResumo[] | null;
   subcategorias_mestre?: SubcategoriaResumo | SubcategoriaResumo[] | null;

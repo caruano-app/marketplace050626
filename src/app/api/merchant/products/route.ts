@@ -11,6 +11,10 @@ type ProductPayload = {
   retailPrice: number;
   wholesalePrice: number | null;
   wholesaleMinQuantity: number | null;
+  weightKg: number;
+  heightCm: number;
+  widthCm: number;
+  depthCm: number;
   allowExport: boolean;
   technicalSpecs: Record<string, string>;
 };
@@ -30,6 +34,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Preencha categoria, nome, SKU e preco unitario." }, { status: 400 });
   }
 
+  if (
+    !Number.isFinite(payload.weightKg) ||
+    !Number.isFinite(payload.heightCm) ||
+    !Number.isFinite(payload.widthCm) ||
+    !Number.isFinite(payload.depthCm) ||
+    payload.weightKg <= 0 ||
+    payload.heightCm <= 0 ||
+    payload.widthCm <= 0 ||
+    payload.depthCm <= 0
+  ) {
+    return NextResponse.json({ error: "Informe peso e dimensoes validas para calculo de frete." }, { status: 400 });
+  }
+
   if (!allowedUnits.has(payload.unitMeasure)) {
     return NextResponse.json({ error: "Unidade de medida invalida." }, { status: 400 });
   }
@@ -41,6 +58,12 @@ export async function POST(request: NextRequest) {
     unidade_medida: payload.unitMeasure,
     preco_atacado: payload.wholesalePrice,
     quantidade_minima_atacado: payload.wholesaleMinQuantity,
+    frete_marketplaces: {
+      peso_kg: payload.weightKg,
+      altura_cm: payload.heightCm,
+      largura_cm: payload.widthCm,
+      profundidade_cm: payload.depthCm,
+    },
     exportacao_marketplaces: {
       permite_exportacao: payload.allowExport,
       exige_ean13_variacao: payload.allowExport,
@@ -55,6 +78,13 @@ export async function POST(request: NextRequest) {
       nome_produto: payload.name.trim(),
       descricao_completa: payload.description?.trim() || null,
       preco_base_varejo: payload.retailPrice,
+      peso_kg: payload.weightKg,
+      dimensoes_cm: {
+        A: payload.heightCm,
+        L: payload.widthCm,
+        P: payload.depthCm,
+        C: payload.depthCm,
+      },
       unidade_medida: payload.unitMeasure,
       especificacoes_tecnicas: technicalData,
       vendido_e_entregue_por: merchant.store.nome_fantasia,

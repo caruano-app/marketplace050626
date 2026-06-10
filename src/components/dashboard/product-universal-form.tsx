@@ -84,6 +84,10 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
   const [retailPrice, setRetailPrice] = useState("");
   const [wholesalePrice, setWholesalePrice] = useState("");
   const [wholesaleMinQuantity, setWholesaleMinQuantity] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [widthCm, setWidthCm] = useState("");
+  const [depthCm, setDepthCm] = useState("");
   const [allowExport, setAllowExport] = useState(true);
   const [technicalSpecs, setTechnicalSpecs] = useState<Record<string, string>>({});
   const [suggestionOpen, setSuggestionOpen] = useState(false);
@@ -121,6 +125,10 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
         retailPrice: Number(retailPrice.replace(",", ".")),
         wholesalePrice: wholesalePrice ? Number(wholesalePrice.replace(",", ".")) : null,
         wholesaleMinQuantity: wholesaleMinQuantity ? Number(wholesaleMinQuantity) : null,
+        weightKg: Number(weightKg.replace(",", ".")),
+        heightCm: Number(heightCm.replace(",", ".")),
+        widthCm: Number(widthCm.replace(",", ".")),
+        depthCm: Number(depthCm.replace(",", ".")),
         allowExport,
         technicalSpecs,
       }),
@@ -140,6 +148,10 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
     setRetailPrice("");
     setWholesalePrice("");
     setWholesaleMinQuantity("");
+    setWeightKg("");
+    setHeightCm("");
+    setWidthCm("");
+    setDepthCm("");
     setTechnicalSpecs({});
     setSaving(false);
   }
@@ -235,6 +247,61 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
             <label className="text-sm font-black uppercase text-neutral-950">
               Minimo atacado
               <input className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none" inputMode="numeric" onChange={(event) => setWholesaleMinQuantity(event.target.value)} placeholder="Ex: 12" value={wholesaleMinQuantity} />
+            </label>
+          </div>
+        </section>
+
+        <section className="rounded-[12px] bg-white p-4 shadow-sm">
+          <div>
+            <h2 className="text-lg font-black uppercase text-neutral-950">Frete e dimensoes obrigatorias</h2>
+            <p className="mt-1 text-sm font-bold text-neutral-600">
+              Esses dados sao exigidos para integracoes futuras com Amazon, Mercado Livre e transportadoras.
+            </p>
+          </div>
+          <div className="mt-3 grid gap-4 md:grid-cols-4">
+            <label className="text-sm font-black uppercase text-neutral-950">
+              Peso (kg)
+              <input
+                className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none"
+                inputMode="decimal"
+                onChange={(event) => setWeightKg(event.target.value)}
+                placeholder="Ex: 0,350"
+                required
+                value={weightKg}
+              />
+            </label>
+            <label className="text-sm font-black uppercase text-neutral-950">
+              Altura (cm)
+              <input
+                className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none"
+                inputMode="decimal"
+                onChange={(event) => setHeightCm(event.target.value)}
+                placeholder="Ex: 5"
+                required
+                value={heightCm}
+              />
+            </label>
+            <label className="text-sm font-black uppercase text-neutral-950">
+              Largura (cm)
+              <input
+                className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none"
+                inputMode="decimal"
+                onChange={(event) => setWidthCm(event.target.value)}
+                placeholder="Ex: 30"
+                required
+                value={widthCm}
+              />
+            </label>
+            <label className="text-sm font-black uppercase text-neutral-950">
+              Profundidade (cm)
+              <input
+                className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-base outline-none"
+                inputMode="decimal"
+                onChange={(event) => setDepthCm(event.target.value)}
+                placeholder="Ex: 40"
+                required
+                value={depthCm}
+              />
             </label>
           </div>
         </section>

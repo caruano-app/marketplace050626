@@ -23,9 +23,6 @@ export async function POST(request: NextRequest) {
   const { error } = await merchant.supabase.from("sugestoes_categorias").insert({
     lojista_id: merchant.store.id,
     nome_sugerido: payload.name.trim(),
-    descricao_contexto: [payload.niche ? `Nicho sugerido: ${payload.niche}` : "", payload.context || ""]
-      .filter(Boolean)
-      .join("\n\n") || null,
     status: "pendente",
   });
 
