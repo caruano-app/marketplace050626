@@ -8,6 +8,7 @@ export type CategoriaMestre = {
 export type LojistaResumo = {
   nome_fantasia: string;
   slug: string;
+  parceiro_premium?: boolean | null;
 };
 
 export type LojistaPerfil = {
@@ -45,6 +46,10 @@ export type ProdutoVitrine = {
   nome_produto: string;
   descricao_completa: string | null;
   preco_base_varejo: number;
+  unidade_medida?: string | null;
+  especificacoes_tecnicas?: Record<string, unknown> | null;
+  vendido_e_entregue_por?: string | null;
+  permite_exportacao?: boolean | null;
   imagens_url: string[] | null;
   peso_kg?: number;
   dimensoes_cm?: {

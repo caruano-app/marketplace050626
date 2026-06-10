@@ -27,6 +27,10 @@ function getStoreName(product: ProdutoVitrine) {
   return asSingle<LojistaResumo>(product.lojistas)?.nome_fantasia || "Howem";
 }
 
+function getStoreSlug(product: ProdutoVitrine) {
+  return asSingle<LojistaResumo>(product.lojistas)?.slug || "loja-caruano";
+}
+
 function getSubcategory(product: ProdutoVitrine) {
   return asSingle<SubcategoriaResumo>(product.subcategorias_mestre);
 }
@@ -136,6 +140,55 @@ function DimensionsAccordion({ product }: { product: ProdutoVitrine }) {
   );
 }
 
+function flattenSpecifications(value: Record<string, unknown> | null | undefined) {
+  if (!value) return [];
+
+  const rows: Array<[string, string]> = [];
+
+  Object.entries(value).forEach(([key, entry]) => {
+    if (entry === null || entry === undefined || entry === "") return;
+
+    if (typeof entry === "object" && !Array.isArray(entry)) {
+      Object.entries(entry as Record<string, unknown>).forEach(([childKey, childValue]) => {
+        if (childValue !== null && childValue !== undefined && childValue !== "") {
+          rows.push([childKey, String(childValue)]);
+        }
+      });
+      return;
+    }
+
+    rows.push([key, String(entry)]);
+  });
+
+  return rows;
+}
+
+function labelize(value: string) {
+  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function TechnicalSpecifications({ product }: { product: ProdutoVitrine }) {
+  const rows = flattenSpecifications(product.especificacoes_tecnicas);
+
+  if (!rows.length) {
+    return null;
+  }
+
+  return (
+    <details className="rounded-[8px] border border-neutral-400 bg-white p-5" open>
+      <summary className="cursor-pointer text-2xl font-black uppercase text-neutral-950">Especificacoes tecnicas +</summary>
+      <div className="mt-4 overflow-hidden rounded-[8px] border border-neutral-200">
+        {rows.map(([key, value], index) => (
+          <div className={`grid grid-cols-[150px_1fr] gap-3 px-3 py-2 text-sm ${index % 2 ? "bg-white" : "bg-neutral-50"}`} key={`${key}-${index}`}>
+            <span className="font-black uppercase text-neutral-700">{labelize(key)}</span>
+            <span className="font-bold text-neutral-800">{value}</span>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [{ product, variations }, relatedProducts] = await Promise.all([
@@ -146,6 +199,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const subcategory = getSubcategory(product);
   const category = getCategory(subcategory);
   const storeName = getStoreName(product);
+  const storeSlug = getStoreSlug(product);
 
   return (
     <div className="min-h-screen bg-white">
@@ -181,7 +235,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
             <div>
               <p className="text-lg font-bold text-neutral-500 line-through">R$ 69,90</p>
-              <p className="text-5xl font-black text-[#f58220]">{formatPrice(product.preco_base_varejo)}</p>
+              <p className="text-5xl font-black text-[#f58220]">
+                {formatPrice(product.preco_base_varejo)}
+                {product.unidade_medida ? <span className="ml-2 text-xl text-neutral-600">/{product.unidade_medida}</span> : null}
+              </p>
+              <a className="mt-3 inline-flex min-h-11 items-center rounded-[8px] border border-[#f6b900] bg-[#fff8d6] px-4 text-sm font-black uppercase text-neutral-950" href={`/loja/${storeSlug}`}>
+                Vendido e entregue por: {product.vendido_e_entregue_por || storeName}
+              </a>
             </div>
 
             <p className="max-w-[600px] text-xl leading-relaxed text-neutral-700">
@@ -202,6 +262,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             />
 
             <DimensionsAccordion product={product} />
+            <TechnicalSpecifications product={product} />
           </div>
         </section>
 

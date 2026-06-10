@@ -150,7 +150,7 @@ export async function getAffiliateShowcase(codigoAfiliado: string): Promise<Affi
 
   const { data: products, error: productsError } = await supabase
     .from("produtos")
-    .select("id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,imagens_url,lojistas(nome_fantasia,slug)")
+    .select("id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug)")
     .in("lojista_id", storeIds)
     .order("criado_em", { ascending: false })
     .limit(20);

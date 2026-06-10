@@ -62,7 +62,7 @@ export async function getStoreProfile(slug: string): Promise<{
   const { data: products, error: productsError } = await supabase
     .from("produtos")
     .select(
-      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,imagens_url,lojistas(nome_fantasia,slug)",
+      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug)",
     )
     .eq("lojista_id", store.id)
     .order("criado_em", { ascending: false })

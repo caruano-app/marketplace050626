@@ -237,6 +237,9 @@ export function CheckoutClient() {
               <div>
                 <h3 className="text-2xl font-black uppercase text-neutral-950">{item.name}</h3>
                 <p className="mt-1 text-base text-neutral-600">SKU {item.sku}</p>
+                <p className="mt-1 inline-block rounded-[4px] bg-[#fff8d6] px-2 py-1 text-xs font-black uppercase text-neutral-800">
+                  Vendido por {item.storeName}
+                </p>
                 <p className="mt-1 text-base text-neutral-700">{formatPrice(item.unitPrice)} cada</p>
                 <div className="mt-2 flex gap-2 text-base">
                   <span className="grid h-7 min-w-7 place-items-center rounded border border-neutral-400 font-black">{item.size || "P"}</span>

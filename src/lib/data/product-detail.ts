@@ -10,6 +10,18 @@ const fallbackProduct: ProdutoVitrine = {
   descricao_completa:
     "Breve descricao do produto descricao do produto. Descricao completa para validar o layout da pagina de detalhes do produto Caruano.",
   preco_base_varejo: 59.9,
+  unidade_medida: "UN",
+  especificacoes_tecnicas: {
+    categoria_nome: "Moda Masculina",
+    atributos: {
+      material_tecido: "Jeans",
+      grade: "P ao GG",
+    },
+    preco_atacado: 49.9,
+    quantidade_minima_atacado: 12,
+  },
+  vendido_e_entregue_por: "Howem",
+  permite_exportacao: true,
   imagens_url: [],
   peso_kg: 0.3,
   dimensoes_cm: {
@@ -60,7 +72,7 @@ export async function getProductDetail(slug: string): Promise<{
   const query = supabase
     .from("produtos")
     .select(
-      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,imagens_url,peso_kg,dimensoes_cm,lojistas(nome_fantasia,slug),subcategorias_mestre(nome_subcategoria,slug_subcategoria,categorias_mestre(nome_categoria,slug_categoria))",
+      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,peso_kg,dimensoes_cm,lojistas(nome_fantasia,slug),subcategorias_mestre(nome_subcategoria,slug_subcategoria,categorias_mestre(nome_categoria,slug_categoria))",
     )
     .limit(1);
 

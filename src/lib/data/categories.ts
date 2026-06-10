@@ -79,3 +79,23 @@ export async function getFeaturedCategories(): Promise<CategoriaMestre[]> {
 
   return data;
 }
+
+export async function getAllCategories(): Promise<CategoriaMestre[]> {
+  const supabase = createSupabaseServerClient();
+
+  if (!supabase) {
+    return fallbackCategories;
+  }
+
+  const { data, error } = await supabase
+    .from("categorias_mestre")
+    .select("id,nome_categoria,slug_categoria,tipo_nicho")
+    .order("nome_categoria", { ascending: true })
+    .limit(120);
+
+  if (error || !data?.length) {
+    return fallbackCategories;
+  }
+
+  return data;
+}

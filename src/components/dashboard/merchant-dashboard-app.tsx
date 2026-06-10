@@ -85,7 +85,10 @@ export function MerchantDashboardApp({ products, quotes }: MerchantDashboardAppP
       <div className="fixed bottom-20 right-4 z-40">
         {fabOpen ? (
           <div className="mb-3 grid gap-2">
-            {["Novo Produto", "Novo Story/Video", "Ver Vendas"].map((label) => (
+            <a className="grid min-h-11 place-items-center rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white shadow-lg" href="/dashboard/lojista/produtos/novo">
+              Novo Produto
+            </a>
+            {["Novo Story/Video", "Ver Vendas"].map((label) => (
               <button className="min-h-11 rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white shadow-lg" key={label} type="button">
                 {label}
               </button>

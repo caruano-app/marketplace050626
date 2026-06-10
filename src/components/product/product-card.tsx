@@ -54,7 +54,9 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col px-3 py-2">
-        <p className="text-[9px] font-bold uppercase text-neutral-500 md:text-[10px]">{getStoreName(product.lojistas)}</p>
+        <p className="text-[9px] font-black uppercase text-neutral-600 md:text-[10px]">
+          Vendido e entregue por {product.vendido_e_entregue_por || getStoreName(product.lojistas)}
+        </p>
         <h3 className="line-clamp-1 text-[13px] font-black uppercase leading-tight text-neutral-950 md:text-[15px]">
           {product.nome_produto}
         </h3>

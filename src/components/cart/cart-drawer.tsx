@@ -48,6 +48,9 @@ export function CartDrawer() {
                   <div>
                     <h3 className="line-clamp-1 text-sm font-black uppercase text-neutral-950">{item.name}</h3>
                     <p className="mt-1 text-xs text-neutral-600">SKU {item.sku}</p>
+                    <p className="mt-1 rounded-[4px] bg-[#fff8d6] px-2 py-1 text-[11px] font-black uppercase text-neutral-800">
+                      Vendido por {item.storeName}
+                    </p>
                     <p className="mt-1 text-xs text-neutral-700">
                       {[item.size, item.color, item.extras].filter(Boolean).join(" | ") || "Sem variacao"}
                     </p>
