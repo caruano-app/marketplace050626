@@ -7,6 +7,7 @@ type UserProfile = {
 };
 
 const protectedMatchers = ["/admin", "/dashboard/lojista"];
+const primaryHosts = new Set(["caruano.com", "www.caruano.com"]);
 
 function isProtectedPath(pathname: string) {
   return protectedMatchers.some((route) => pathname === route || pathname.startsWith(`${route}/`));
@@ -40,22 +41,34 @@ function getTokenFromSupabaseCookie(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const shouldNoindex =
+    process.env.NEXT_PUBLIC_SITE_NOINDEX === "true" || !primaryHosts.has(request.nextUrl.hostname.toLowerCase());
 
   if (!isProtectedPath(pathname)) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+
+    if (shouldNoindex) {
+      response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    }
+
+    return response;
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return redirectToLogin(request);
+    const response = redirectToLogin(request);
+    if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
 
   const token = getTokenFromAppCookie(request) || getTokenFromSupabaseCookie(request);
 
   if (!token) {
-    return redirectToLogin(request);
+    const response = redirectToLogin(request);
+    if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -73,7 +86,9 @@ export async function middleware(request: NextRequest) {
   const { data: authData, error: authError } = await supabase.auth.getUser(token);
 
   if (authError || !authData.user) {
-    return redirectToLogin(request);
+    const response = redirectToLogin(request);
+    if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -83,25 +98,37 @@ export async function middleware(request: NextRequest) {
     .maybeSingle();
 
   if (profileError || !profile) {
-    return redirectToLogin(request);
+    const response = redirectToLogin(request);
+    if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
 
   const userProfile = profile as UserProfile;
 
   if ((pathname === "/admin" || pathname.startsWith("/admin/")) && userProfile.is_admin !== true) {
-    return redirectToLogin(request);
+    const response = redirectToLogin(request);
+    if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
 
   if (
     (pathname === "/dashboard/lojista" || pathname.startsWith("/dashboard/lojista/")) &&
     userProfile.perfil_principal !== "lojista"
   ) {
-    return redirectToLogin(request);
+    const response = redirectToLogin(request);
+    if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  if (shouldNoindex) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/lojista/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)"],
 };

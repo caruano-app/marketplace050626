@@ -2,14 +2,9 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type ProfileChoice = "comprador" | "lojista";
 type AuthMode = "login" | "cadastro";
-
-function saveSessionCookie(accessToken: string) {
-  document.cookie = `caruano_session_access_token=${accessToken}; Max-Age=${60 * 60 * 24 * 7}; Path=/; SameSite=Lax`;
-}
 
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -27,36 +22,28 @@ export function LoginForm() {
     setIsSubmitting(true);
     setStatus("Processando acesso...");
 
-    const supabase = createSupabaseBrowserClient();
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        mode,
+        email,
+        password,
+        name,
+        profile,
+      }),
+    });
+    const payload = (await response.json()) as { ok?: boolean; error?: string; needsEmailConfirmation?: boolean };
 
-    if (!supabase) {
-      setStatus("Configure as variaveis do Supabase antes de autenticar.");
+    if (!response.ok || payload.error) {
+      setStatus(payload.error || "Nao foi possivel autenticar agora.");
       setIsSubmitting(false);
       return;
     }
 
-    const response =
-      mode === "login"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                nome_completo: name,
-                perfil_principal: profile,
-              },
-            },
-          });
-
-    if (response.error) {
-      setStatus(response.error.message);
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (response.data.session?.access_token) {
-      saveSessionCookie(response.data.session.access_token);
+    if (!payload.needsEmailConfirmation) {
       window.location.href = nextUrl;
       return;
     }
