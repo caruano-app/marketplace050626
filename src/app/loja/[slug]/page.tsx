@@ -10,6 +10,8 @@ import { getFeaturedCategories } from "@/lib/data/categories";
 import { getStoriesByStore } from "@/lib/data/stories";
 import { getStoreProfile } from "@/lib/data/store-profile";
 
+export const dynamic = "force-dynamic";
+
 export default async function StorePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [{ store, products }, categories] = await Promise.all([

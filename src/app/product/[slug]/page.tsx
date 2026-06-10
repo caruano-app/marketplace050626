@@ -8,6 +8,8 @@ import { getProductDetail, type WholesalePriceRule } from "@/lib/data/product-de
 import { getFeaturedProducts } from "@/lib/data/products";
 import type { CategoriaResumo, LojistaResumo, ProdutoVitrine, SubcategoriaResumo } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 function formatPrice(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",

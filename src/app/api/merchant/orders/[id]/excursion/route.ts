@@ -27,7 +27,7 @@ async function uploadProofImage(request: NextRequest, merchantId: string, orderI
   const path = `${merchantId}/${orderId}/${Date.now()}-${file.name.replace(/[^a-z0-9.]+/gi, "-").toLowerCase()}`;
   const { error } = await merchant.supabase.storage.from(bucket).upload(path, file, {
     contentType: file.type || "image/jpeg",
-    upsert: true,
+    upsert: false,
   });
 
   if (error) {

@@ -18,8 +18,18 @@ const statusOptions: Array<{ value: MerchantOrderStatus; label: string; classNam
   { value: "enviado", label: "Enviado", className: "bg-[#00a86b] text-white" },
 ];
 
+const maxProofSizeBytes = 500 * 1024;
+
+function canvasToBlob(canvas: HTMLCanvasElement, quality: number) {
+  return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+}
+
 async function compressImage(file: File) {
   if (!file.type.startsWith("image/")) {
+    return file;
+  }
+
+  if (file.size <= maxProofSizeBytes) {
     return file;
   }
 
@@ -28,24 +38,37 @@ async function compressImage(file: File) {
   image.src = objectUrl;
   await image.decode();
 
-  const maxSide = 1280;
-  const ratio = Math.min(1, maxSide / Math.max(image.width, image.height));
-  const width = Math.round(image.width * ratio);
-  const height = Math.round(image.height * ratio);
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-  context?.drawImage(image, 0, 0, width, height);
+  let maxSide = 1280;
+  let quality = 0.72;
+  let bestBlob: Blob | null = null;
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const ratio = Math.min(1, maxSide / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * ratio));
+    const height = Math.max(1, Math.round(image.height * ratio));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    context?.drawImage(image, 0, 0, width, height);
+    const blob = await canvasToBlob(canvas, quality);
+
+    if (blob) {
+      bestBlob = blob;
+      if (blob.size <= maxProofSizeBytes) break;
+    }
+
+    quality = Math.max(0.42, quality - 0.08);
+    maxSide = Math.max(720, Math.round(maxSide * 0.82));
+  }
+
   URL.revokeObjectURL(objectUrl);
 
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
-
-  if (!blob) {
+  if (!bestBlob) {
     return file;
   }
 
-  return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+  return new File([bestBlob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
 }
 
 export function OrderLogisticsPanel({ orderId, currentStatus, excursions, shipment }: OrderLogisticsPanelProps) {
@@ -59,6 +82,7 @@ export function OrderLogisticsPanel({ orderId, currentStatus, excursions, shipme
   const [sectorColor, setSectorColor] = useState(shipment?.sectorColor || selectedExcursion?.sectorColor || "");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofLabel, setProofLabel] = useState(shipment?.proofUrl ? "Comprovante ja anexado" : "");
+  const [uploadingProof, setUploadingProof] = useState(false);
 
   function refreshAfterSuccess(message: string) {
     setStatusMessage(message);
@@ -83,27 +107,41 @@ export function OrderLogisticsPanel({ orderId, currentStatus, excursions, shipme
   }
 
   async function saveExcursion() {
-    setStatusMessage("Salvando logistica...");
-    const formData = new FormData();
-    formData.set("excursionId", excursionId);
-    formData.set("guideName", guideName);
-    formData.set("boxNumber", boxNumber);
-    formData.set("sectorColor", sectorColor);
-    if (shipment?.proofUrl) formData.set("currentProofUrl", shipment.proofUrl);
-    if (proofFile) formData.set("proof", await compressImage(proofFile));
+    setUploadingProof(true);
+    setStatusMessage(proofFile ? "Comprimindo comprovante..." : "Salvando logistica...");
 
-    const response = await fetch(`/api/merchant/orders/${orderId}/excursion`, {
-      method: "POST",
-      body: formData,
-    });
-    const data = (await response.json()) as { error?: string };
+    try {
+      const formData = new FormData();
+      formData.set("excursionId", excursionId);
+      formData.set("guideName", guideName);
+      formData.set("boxNumber", boxNumber);
+      formData.set("sectorColor", sectorColor);
+      if (shipment?.proofUrl) formData.set("currentProofUrl", shipment.proofUrl);
+      if (proofFile) {
+        const compressedProof = await compressImage(proofFile);
+        formData.set("proof", compressedProof);
+        setStatusMessage(`Enviando comprovante (${Math.round(compressedProof.size / 1024)}kb)...`);
+      }
 
-    if (!response.ok) {
-      setStatusMessage(data.error || "Nao foi possivel salvar a logistica.");
-      return;
+      const response = await fetch(`/api/merchant/orders/${orderId}/excursion`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setStatusMessage(data.error || "Nao foi possivel salvar a logistica.");
+        return;
+      }
+
+      setProofFile(null);
+      setProofLabel("Comprovante enviado com sucesso");
+      refreshAfterSuccess("Logistica salva. Pedido pronto para coleta.");
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Nao foi possivel preparar o comprovante.");
+    } finally {
+      setUploadingProof(false);
     }
-
-    refreshAfterSuccess("Logistica salva. Pedido pronto para coleta.");
   }
 
   return (
@@ -113,7 +151,7 @@ export function OrderLogisticsPanel({ orderId, currentStatus, excursions, shipme
           <p className="text-sm font-black uppercase text-[#f58220]">Motor de logistica</p>
           <h2 className="text-2xl font-black uppercase text-neutral-950">Excursao e comprovante</h2>
         </div>
-        {isPending ? <span className="rounded-full bg-neutral-200 px-3 py-2 text-xs font-black uppercase text-neutral-700">Atualizando</span> : null}
+        {isPending || uploadingProof ? <span className="rounded-full bg-neutral-200 px-3 py-2 text-xs font-black uppercase text-neutral-700">Atualizando</span> : null}
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -199,8 +237,15 @@ export function OrderLogisticsPanel({ orderId, currentStatus, excursions, shipme
         />
       </label>
 
-      <button className="mt-4 min-h-12 w-full rounded-[8px] bg-[#ffd700] px-4 text-sm font-black uppercase text-neutral-950" onClick={saveExcursion} type="button">
-        Salvar logistica e preparar coleta
+      {uploadingProof ? (
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-200">
+          <div className="h-full w-2/3 animate-pulse rounded-full bg-[#ffd700]" />
+        </div>
+      ) : null}
+
+      <button className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-[#ffd700] px-4 text-sm font-black uppercase text-neutral-950 disabled:opacity-60" disabled={uploadingProof} onClick={saveExcursion} type="button">
+        {uploadingProof ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-950 border-t-transparent" /> : null}
+        {uploadingProof ? "Enviando comprovante..." : "Salvar logistica e preparar coleta"}
       </button>
       {statusMessage ? <p className="mt-3 rounded-[8px] bg-neutral-100 p-3 text-sm font-black text-neutral-700">{statusMessage}</p> : null}
     </section>
