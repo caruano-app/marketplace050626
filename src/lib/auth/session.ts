@@ -89,3 +89,39 @@ export async function getAuthenticatedMerchant(request: NextRequest) {
     store,
   };
 }
+
+export async function getAuthenticatedAdmin(request: NextRequest) {
+  const token = getSessionToken(request);
+
+  if (!token) {
+    return { error: "Login necessario.", status: 401 as const };
+  }
+
+  const supabase = createSupabaseRequestClient(token);
+
+  if (!supabase) {
+    return { error: "Supabase nao configurado.", status: 500 as const };
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+
+  if (authError || !authData.user) {
+    return { error: "Sessao invalida.", status: 401 as const };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("usuarios")
+    .select("id,perfil_principal,is_admin")
+    .eq("id", authData.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile || profile.is_admin !== true) {
+    return { error: "Acesso restrito ao Admin Caruano.", status: 403 as const };
+  }
+
+  return {
+    supabase,
+    user: authData.user,
+    profile,
+  };
+}
