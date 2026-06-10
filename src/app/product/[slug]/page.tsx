@@ -55,27 +55,45 @@ function PlaceholderImage({ label, className }: { label: string; className: stri
   );
 }
 
+function PlayBadge() {
+  return (
+    <span className="absolute inset-0 grid place-items-center bg-black/20" aria-hidden="true">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-[#ffd700] text-neutral-950 shadow-lg">
+        <span className="ml-1 h-0 w-0 border-y-[10px] border-l-[16px] border-y-transparent border-l-neutral-950" />
+      </span>
+    </span>
+  );
+}
+
 function ProductGallery({ product }: { product: ProdutoVitrine }) {
-  const images = product.imagens_url || [];
+  const images = (product.imagens_url || []).slice(0, 5);
   const mainImage = images[0];
-  const thumbnails = Array.from({ length: 4 }, (_, index) => images[index + 1] || images[0] || null);
-  const swipeImages = images.length ? images.slice(0, 5) : [];
+  const mediaItems = [
+    ...images.map((image) => ({ type: "image" as const, src: image })),
+    ...(product.video_url ? [{ type: "video" as const, src: product.video_url }] : []),
+  ].slice(0, 6);
 
   return (
     <div>
-      {swipeImages.length ? (
+      {mediaItems.length ? (
         <div className="mb-4 flex snap-x snap-mandatory gap-3 overflow-x-auto md:hidden">
-          {swipeImages.map((image, index) => (
-            <div className="relative h-[360px] min-w-full snap-center overflow-hidden rounded-[8px] border border-neutral-300 bg-neutral-200" key={`${image}-${index}`}>
-              <Image
-                alt={`${product.nome_produto} ${index + 1}`}
-                blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
-                className="object-cover"
-                fill
-                placeholder="blur"
-                sizes="100vw"
-                src={image}
-              />
+          {mediaItems.map((item, index) => (
+            <div className="relative h-[360px] min-w-full snap-center overflow-hidden rounded-[8px] border border-neutral-300 bg-neutral-200" key={`${item.type}-${item.src}-${index}`}>
+              {item.type === "image" ? (
+                <Image
+                  alt={`${product.nome_produto} ${index + 1}`}
+                  blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+                  className="object-cover"
+                  fill
+                  placeholder="blur"
+                  sizes="100vw"
+                  src={item.src}
+                />
+              ) : (
+                <video className="h-full w-full object-cover" controls loop muted playsInline poster={mainImage || undefined} preload="none">
+                  <source src={item.src} />
+                </video>
+              )}
             </div>
           ))}
         </div>
@@ -94,14 +112,20 @@ function ProductGallery({ product }: { product: ProdutoVitrine }) {
             src={mainImage}
           />
         ) : (
-          <PlaceholderImage className="h-full w-full" label="Imagem ou video do produto 700x500 pixel" />
+          product.video_url ? (
+            <video className="h-full w-full object-cover" controls loop muted playsInline preload="none">
+              <source src={product.video_url} />
+            </video>
+          ) : (
+            <PlaceholderImage className="h-full w-full" label="Imagem ou video do produto 700x500 pixel" />
+          )
         )}
       </div>
 
-      <div className="mt-4 flex max-w-[700px] gap-4 overflow-x-auto md:grid md:grid-cols-4 md:overflow-visible">
-        {thumbnails.map((thumbnail, index) => (
-          <div className="relative h-[120px] min-w-[150px] overflow-hidden rounded-[4px] border border-neutral-300 bg-neutral-100 md:h-[150px] md:min-w-0" key={`${thumbnail}-${index}`}>
-            {thumbnail ? (
+      <div className="mt-4 flex max-w-[700px] gap-4 overflow-x-auto md:grid md:grid-cols-6 md:overflow-visible">
+        {mediaItems.map((item, index) => (
+          <div className="relative h-[120px] min-w-[150px] overflow-hidden rounded-[4px] border border-neutral-300 bg-neutral-100 md:h-[120px] md:min-w-0" key={`thumb-${item.type}-${item.src}-${index}`}>
+            {item.type === "image" ? (
               <Image
                 alt={`${product.nome_produto} ${index + 1}`}
                 blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
@@ -109,13 +133,35 @@ function ProductGallery({ product }: { product: ProdutoVitrine }) {
                 fill
                 placeholder="blur"
                 sizes="160px"
-                src={thumbnail}
+                src={item.src}
               />
             ) : (
-              <PlaceholderImage className="h-full w-full" label="Imagem ou video do produto 160x150 pixel" />
+              <>
+                {mainImage ? (
+                  <Image
+                    alt={`Video de ${product.nome_produto}`}
+                    blurDataURL="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+                    className="object-cover"
+                    fill
+                    placeholder="blur"
+                    sizes="160px"
+                    src={mainImage}
+                  />
+                ) : (
+                  <div className="h-full w-full bg-neutral-300" />
+                )}
+                <PlayBadge />
+              </>
             )}
           </div>
         ))}
+        {!mediaItems.length ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div className="relative h-[120px] min-w-[150px] overflow-hidden rounded-[4px] border border-neutral-300 bg-neutral-100 md:h-[120px] md:min-w-0" key={`placeholder-${index}`}>
+              <PlaceholderImage className="h-full w-full" label="Imagem ou video do produto 160x150 pixel" />
+            </div>
+          ))
+        ) : null}
       </div>
 
       <details className="mt-4 max-w-[700px] rounded-[8px] border border-neutral-400 bg-[#fffbd1] p-5" open>

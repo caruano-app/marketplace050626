@@ -14,6 +14,7 @@ type DynamicField = {
 };
 
 const allUnits = ["UN", "KG", "CX", "DZ", "FD", "LT", "MT"];
+const maxProductVideoBytes = 10 * 1024 * 1024;
 
 function normalize(value: string) {
   return value
@@ -105,6 +106,7 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
   const [variationStock, setVariationStock] = useState("");
   const [allowExport, setAllowExport] = useState(true);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [technicalSpecs, setTechnicalSpecs] = useState<Record<string, string>>({});
   const [suggestionOpen, setSuggestionOpen] = useState(false);
   const [suggestionName, setSuggestionName] = useState("");
@@ -153,6 +155,7 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
     formData.set("allowExport", String(allowExport));
     formData.set("technicalSpecs", JSON.stringify(technicalSpecs));
     imageFiles.forEach((file) => formData.append("images", file));
+    if (videoFile) formData.set("video", videoFile);
 
     const response = await fetch("/api/merchant/products", {
       method: "POST",
@@ -182,6 +185,7 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
     setVariationEan13("");
     setVariationStock("");
     setImageFiles([]);
+    setVideoFile(null);
     setTechnicalSpecs({});
     setSaving(false);
   }
@@ -353,6 +357,42 @@ export function ProductUniversalForm({ categories }: ProductUniversalFormProps) 
               type="file"
             />
           </label>
+        </fieldset>
+
+        <fieldset className="rounded-[12px] bg-white p-4 shadow-sm disabled:opacity-50" disabled={!categorySelected}>
+          <h2 className="text-lg font-black uppercase text-neutral-950">Video de demonstracao</h2>
+          <p className="mt-1 text-sm font-bold text-neutral-600">
+            Envie 1 video leve de ate 10MB. Ele sera salvo no bucket product-videos e carregado somente quando o cliente tocar.
+          </p>
+          <label className="mt-3 grid min-h-16 cursor-pointer place-items-center rounded-[8px] border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 text-center text-sm font-black uppercase text-neutral-700">
+            Selecionar video
+            <span className="mt-1 block text-xs font-bold normal-case text-neutral-500">
+              {videoFile ? `${videoFile.name} (${Math.round(videoFile.size / 1024 / 1024 * 10) / 10}MB)` : "MP4, WEBM ou MOV ate 10MB"}
+            </span>
+            <input
+              accept="video/*"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0] || null;
+
+                if (file && file.size > maxProductVideoBytes) {
+                  setStatus("O video deve ter no maximo 10MB para rodar bem no 3G/4G.");
+                  setVideoFile(null);
+                  event.target.value = "";
+                  return;
+                }
+
+                setStatus("");
+                setVideoFile(file);
+              }}
+              type="file"
+            />
+          </label>
+          {videoFile ? (
+            <button className="mt-2 min-h-11 rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white" onClick={() => setVideoFile(null)} type="button">
+              Remover video
+            </button>
+          ) : null}
         </fieldset>
 
         <fieldset className="rounded-[12px] bg-white p-4 shadow-sm disabled:opacity-50" disabled={!categorySelected}>

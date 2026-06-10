@@ -23,6 +23,7 @@ type ProductPayload = {
 };
 
 const allowedUnits = new Set(["UN", "KG", "CX", "DZ", "FD", "LT", "MT"]);
+const maxProductVideoBytes = 10 * 1024 * 1024;
 
 function formText(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -48,7 +49,7 @@ function parseTechnicalSpecs(value: string) {
   }
 }
 
-async function parsePayload(request: NextRequest): Promise<{ payload: ProductPayload; images: File[] }> {
+async function parsePayload(request: NextRequest): Promise<{ payload: ProductPayload; images: File[]; video: File | null }> {
   const contentType = request.headers.get("content-type") || "";
 
   if (!contentType.includes("multipart/form-data")) {
@@ -61,6 +62,7 @@ async function parsePayload(request: NextRequest): Promise<{ payload: ProductPay
         variationStock: Number(payload.variationStock || 0),
       },
       images: [],
+      video: null,
     };
   }
 
@@ -68,6 +70,8 @@ async function parsePayload(request: NextRequest): Promise<{ payload: ProductPay
   const images = formData
     .getAll("images")
     .filter((file): file is File => file instanceof File && file.size > 0 && file.type.startsWith("image/"));
+  const videoValue = formData.get("video");
+  const video = videoValue instanceof File && videoValue.size > 0 && videoValue.type.startsWith("video/") ? videoValue : null;
 
   return {
     payload: {
@@ -91,6 +95,7 @@ async function parsePayload(request: NextRequest): Promise<{ payload: ProductPay
       variationStock: formNumber(formData, "variationStock"),
     },
     images,
+    video,
   };
 }
 
@@ -116,6 +121,26 @@ async function uploadProductImages(images: File[], productId: string, merchantId
   return urls;
 }
 
+async function uploadProductVideo(video: File, productId: string, merchantId: string, supabase: ReturnType<typeof getAuthenticatedMerchant> extends Promise<infer T> ? T extends { supabase: infer S } ? S : never : never) {
+  if (video.size > maxProductVideoBytes) {
+    throw new Error("O video de demonstracao deve ter no maximo 10MB.");
+  }
+
+  const extension = video.name.split(".").pop() || "mp4";
+  const path = `${merchantId}/${productId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+  const { error } = await supabase.storage.from("product-videos").upload(path, video, {
+    contentType: video.type || "video/mp4",
+    upsert: false,
+  });
+
+  if (error) {
+    throw new Error(`Falha ao enviar video para o bucket product-videos: ${error.message}`);
+  }
+
+  const { data } = supabase.storage.from("product-videos").getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function POST(request: NextRequest) {
   const merchant = await getAuthenticatedMerchant(request);
 
@@ -123,7 +148,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: merchant.error }, { status: merchant.status });
   }
 
-  const { payload, images } = await parsePayload(request);
+  const { payload, images, video } = await parsePayload(request);
 
   if (!payload.name?.trim() || !payload.sku?.trim() || !payload.categoryId || !payload.retailPrice) {
     return NextResponse.json({ error: "Preencha categoria, nome, SKU e preco unitario." }, { status: 400 });
@@ -191,6 +216,7 @@ export async function POST(request: NextRequest) {
       vendido_e_entregue_por: merchant.store.nome_fantasia,
       permite_exportacao: payload.allowExport,
       imagens_url: [],
+      video_url: null,
     })
     .select("id")
     .single();
@@ -207,6 +233,15 @@ export async function POST(request: NextRequest) {
       await merchant.supabase.from("produtos").update({ imagens_url: imageUrls }).eq("id", data.id);
     } catch (uploadError) {
       return NextResponse.json({ error: uploadError instanceof Error ? uploadError.message : "Falha ao enviar imagens." }, { status: 400 });
+    }
+  }
+
+  if (video) {
+    try {
+      const videoUrl = await uploadProductVideo(video, data.id, merchant.store.id, merchant.supabase);
+      await merchant.supabase.from("produtos").update({ video_url: videoUrl }).eq("id", data.id);
+    } catch (uploadError) {
+      return NextResponse.json({ error: uploadError instanceof Error ? uploadError.message : "Falha ao enviar video." }, { status: 400 });
     }
   }
 

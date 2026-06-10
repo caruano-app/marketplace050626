@@ -28,6 +28,7 @@ const fallbackProduct: ProdutoVitrine = {
   vendido_e_entregue_por: "Howem",
   permite_exportacao: true,
   imagens_url: [],
+  video_url: null,
   peso_kg: 0.3,
   dimensoes_cm: {
     L: 30,
@@ -84,7 +85,7 @@ export async function getProductDetail(slug: string): Promise<{
   const query = supabase
     .from("produtos")
     .select(
-      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,peso_kg,dimensoes_cm,lojistas(nome_fantasia,slug),subcategorias_mestre(nome_subcategoria,slug_subcategoria,categorias_mestre(nome_categoria,slug_categoria))",
+      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,video_url,peso_kg,dimensoes_cm,lojistas(nome_fantasia,slug),subcategorias_mestre(nome_subcategoria,slug_subcategoria,categorias_mestre(nome_categoria,slug_categoria))",
     )
     .limit(1);
 

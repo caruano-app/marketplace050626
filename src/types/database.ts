@@ -51,6 +51,7 @@ export type ProdutoVitrine = {
   vendido_e_entregue_por?: string | null;
   permite_exportacao?: boolean | null;
   imagens_url: string[] | null;
+  video_url?: string | null;
   peso_kg?: number;
   dimensoes_cm?: {
     L?: number;
