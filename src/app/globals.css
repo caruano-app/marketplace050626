@@ -1,0 +1,242 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+}
+
+* {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a,
+button {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+button:active,
+a:active {
+  opacity: 0.82;
+  transform: scale(0.95);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+button,
+a[role="button"] {
+  min-height: 44px;
+}
+
+body::before {
+  content: "Solte para atualizar";
+  position: fixed;
+  left: 50%;
+  top: 10px;
+  z-index: 60;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #171717;
+  color: #ffffff;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 900;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dashboard-skeleton-card {
+  min-height: 96px;
+  border-radius: 8px;
+}
+
+.print-ticket {
+  width: 14.1cm;
+  min-height: 8.7cm;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #171717;
+  padding: 0.35cm;
+  font-family: Arial, Helvetica, sans-serif;
+  page-break-inside: avoid;
+}
+
+.print-ticket-vertical {
+  width: 8.7cm;
+  min-height: 14.1cm;
+}
+
+.print-barcode {
+  width: 4.2cm;
+  height: 0.9cm;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #000 0,
+      #000 2px,
+      #fff 2px,
+      #fff 5px,
+      #000 5px,
+      #000 6px,
+      #fff 6px,
+      #fff 10px
+    );
+}
+
+.print-barcode-wide {
+  width: 100%;
+  height: 1.45cm;
+}
+
+.print-qr {
+  width: 3cm;
+  height: 3cm;
+  background:
+    linear-gradient(90deg, #000 10px, transparent 10px) 0 0 / 20px 20px,
+    linear-gradient(#000 10px, transparent 10px) 0 0 / 20px 20px,
+    #ffffff;
+  border: 8px solid #000000;
+}
+
+.print-qr-small {
+  width: 2.35cm;
+  height: 2.35cm;
+  border-width: 6px;
+}
+
+.print-tracking-vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.print-dashed {
+  border-top: 3px dashed #000000;
+}
+
+@page {
+  size: 14.1cm 8.7cm;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    width: 14.1cm;
+    min-height: 8.7cm;
+    background: #ffffff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .print-ticket,
+  .print-ticket * {
+    visibility: visible;
+  }
+
+  .print-ticket {
+    position: absolute;
+    left: 0;
+    top: 0;
+    border: 0;
+    box-shadow: none;
+  }
+}
+
+.caruano-product-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .caruano-product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .caruano-product-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.caruano-skeleton {
+  background: linear-gradient(90deg, #e5e5e5 25%, #f5f5f5 37%, #e5e5e5 63%);
+  background-size: 400% 100%;
+  animation: caruano-skeleton 1.4s ease infinite;
+}
+
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@keyframes caruano-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes caruano-skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: 0 0;
+  }
+}
