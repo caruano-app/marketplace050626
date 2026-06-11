@@ -79,6 +79,14 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "caruano-cart",
+      partialize: (state) => ({ items: state.items }),
+      merge: (persisted, current) => ({
+        ...current,
+        items: Array.isArray((persisted as Partial<CartState> | undefined)?.items)
+          ? (persisted as Partial<CartState>).items || []
+          : [],
+        isOpen: false,
+      }),
     },
   ),
 );

@@ -14,11 +14,15 @@ export function CartDrawer() {
   const { items, isOpen, closeCart, increment, decrement, removeItem } = useCartStore();
   const subtotal = items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <div className={`fixed inset-0 z-50 ${isOpen ? "" : "pointer-events-none"}`}>
-      <button className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0"}`} onClick={closeCart} type="button" />
+    <div className="fixed inset-0 z-50">
+      <button className="absolute inset-0 bg-black/40 transition-opacity duration-200 opacity-100" onClick={closeCart} type="button" />
       <aside
-        className={`absolute right-0 top-0 flex h-full w-full max-w-[420px] flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+        className="absolute right-0 top-0 flex h-full w-full max-w-[420px] flex-col bg-white shadow-xl transition-transform duration-300 ease-out translate-x-0"
       >
         <div className="flex h-16 items-center justify-between border-b border-neutral-200 px-5">
           <h2 className="text-xl font-black uppercase text-neutral-950">Carrinho</h2>
