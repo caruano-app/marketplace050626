@@ -29,12 +29,49 @@ function getTokenFromCookieStore(cookieStore: Awaited<ReturnType<typeof cookies>
   }
 }
 
+const defaultBenefits: BenefitOffer[] = [
+  {
+    id: "energia-solar-caruano",
+    titulo: "Energia Solar",
+    categoria: "Energia",
+    parceiro_id: null,
+    desconto_percentual: null,
+    descricao_beneficio: "Reduza sua conta de luz em ate 90%. Solicite um orcamento gratuito para loja, fabrica ou galpao.",
+    link_adesao: null,
+    ativo: true,
+    lojistas: null,
+  },
+  {
+    id: "seguro-carga-veiculo",
+    titulo: "Seguro de Carga e Veiculo",
+    categoria: "Seguro",
+    parceiro_id: null,
+    desconto_percentual: null,
+    descricao_beneficio: "Proteja sua Toyota, Van, moto de frete ou carga com condicoes exclusivas Caruano.",
+    link_adesao: null,
+    ativo: true,
+    lojistas: null,
+  },
+  {
+    id: "insumos-b2b",
+    titulo: "Insumos B2B",
+    categoria: "Insumos",
+    parceiro_id: null,
+    desconto_percentual: null,
+    descricao_beneficio: "Sacolas, etiquetas, linhas e materiais de loja com preco de fabrica para parceiros do Polo.",
+    link_adesao: null,
+    ativo: true,
+    lojistas: null,
+  },
+];
+
 function scoreBenefit(benefit: BenefitOffer, profile: ConsumptionProfile | null) {
   const category = (benefit.categoria || "").toLowerCase();
 
   if (!profile) return 0;
   if (category.includes("energia") && Number(profile.gasto_medio_energia || 0) >= 500) return 30;
   if (category.includes("seguro") && profile.possui_veiculo) return 30;
+  if (category.includes("insumos") && profile.interesses_insumos?.length) return 20;
   if (category.includes("saude")) return 10;
   return 0;
 }
@@ -56,7 +93,9 @@ async function getLoggedProfile() {
 
 export default async function BenefitsClubPage() {
   const [benefits, profile] = await Promise.all([getActiveBenefits(), getLoggedProfile()]);
-  const orderedBenefits = [...benefits].sort((a, b) => scoreBenefit(b, profile) - scoreBenefit(a, profile));
+  const sourceBenefits = benefits.length ? benefits : defaultBenefits;
+  const orderedBenefits = [...sourceBenefits].sort((a, b) => scoreBenefit(b, profile) - scoreBenefit(a, profile));
+  const topBenefitId = orderedBenefits.find((benefit) => scoreBenefit(benefit, profile) > 0)?.id || null;
 
   return (
     <div className="min-h-screen bg-neutral-100">
@@ -104,7 +143,12 @@ export default async function BenefitsClubPage() {
                     <p className="text-xs font-black uppercase text-[#f58220]">{benefit.categoria || "Beneficio"}</p>
                     <h3 className="mt-1 text-xl font-black uppercase text-neutral-950">{benefit.titulo}</h3>
                   </div>
-                  <span className="rounded-full bg-[#ffd700] px-3 py-1 text-xs font-black uppercase text-neutral-950">{formatPercent(benefit.desconto_percentual)}</span>
+                  <div className="flex flex-col items-end gap-2">
+                    {benefit.id === topBenefitId ? (
+                      <span className="rounded-full bg-neutral-950 px-3 py-1 text-xs font-black uppercase text-[#ffd700]">Recomendado</span>
+                    ) : null}
+                    <span className="rounded-full bg-[#ffd700] px-3 py-1 text-xs font-black uppercase text-neutral-950">{formatPercent(benefit.desconto_percentual)}</span>
+                  </div>
                 </div>
                 <p className="mt-3 min-h-16 text-sm font-bold leading-relaxed text-neutral-700">
                   {benefit.descricao_beneficio || "Beneficio especial negociado pelo Caruano para parceiros do Agreste."}
@@ -115,8 +159,8 @@ export default async function BenefitsClubPage() {
                 <a
                   className="mt-4 grid min-h-11 place-items-center rounded-[6px] bg-neutral-950 px-4 text-sm font-black uppercase text-white"
                   href={benefit.link_adesao || "/login?next=/clube"}
-                  rel={benefit.link_adesao ? "noreferrer" : undefined}
-                  target={benefit.link_adesao ? "_blank" : undefined}
+                  rel={benefit.link_adesao?.startsWith("http") ? "noreferrer" : undefined}
+                  target={benefit.link_adesao?.startsWith("http") ? "_blank" : undefined}
                 >
                   Quero aderir
                 </a>
