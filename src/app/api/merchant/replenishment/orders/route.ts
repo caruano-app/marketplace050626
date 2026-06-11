@@ -105,6 +105,13 @@ export async function POST(request: NextRequest) {
       warnings.push(`Frete de carga nao aberto automaticamente: ${freightAttempt.error.message}`);
     }
 
+    await merchant.supabase
+      .from("alertas_reabastecimento")
+      .update({ status: "pedido_feito" })
+      .eq("lojista_id", merchant.store.id)
+      .eq("produto_id", payload.productId)
+      .eq("status", "pendente");
+
     return NextResponse.json({ ok: true, orderId: order.orderId, warnings });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Falha ao gerar ordem." }, { status: 400 });
