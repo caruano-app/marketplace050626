@@ -1,7 +1,7 @@
 import { SiteHeader } from "@/components/header/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { MerchantDashboardApp } from "@/components/dashboard/merchant-dashboard-app";
-import { NotificationBadge } from "@/components/smart-tools/notification-badge";
+import { NotificationBell } from "@/components/smart-tools/notification-badge";
 import { TrackableQrCode } from "@/components/qrcode/trackable-qr-code";
 import { getMerchantLeadMetric, getMerchantProducts, getMerchantStoreQr, getPendingQuotes } from "@/lib/data/merchant-dashboard";
 
@@ -37,11 +37,16 @@ export default async function MerchantDashboardPage() {
       <SiteHeader />
       <main className="mx-auto max-w-[1412px] px-4 py-5">
         <section className="rounded-[8px] bg-neutral-950 p-5 text-white">
-          <p className="text-sm font-black uppercase text-[#f6b900]">Dashboard do lojista</p>
-          <h1 className="mt-1 text-3xl font-black uppercase leading-tight">Painel rapido</h1>
-          <p className="mt-2 text-sm font-bold text-neutral-300">
-            Acompanhe leads, vendas e cotacoes pendentes em uma visao pensada para celular.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-black uppercase text-[#f6b900]">Dashboard do lojista</p>
+              <h1 className="mt-1 text-3xl font-black uppercase leading-tight">Painel rapido</h1>
+              <p className="mt-2 text-sm font-bold text-neutral-300">
+                Acompanhe leads, vendas e cotacoes pendentes em uma visao pensada para celular.
+              </p>
+            </div>
+            <NotificationBell placement="inline" />
+          </div>
         </section>
 
         <section className="mt-4 flex gap-3 overflow-x-auto pb-2">
@@ -105,7 +110,6 @@ export default async function MerchantDashboardPage() {
         </div>
       </main>
       <SiteFooter />
-      <NotificationBadge />
     </div>
   );
 }

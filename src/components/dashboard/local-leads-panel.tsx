@@ -10,6 +10,12 @@ function formatPrice(value: number) {
   }).format(value);
 }
 
+function whatsappHref(phone: string, message: string) {
+  const digits = phone.replace(/\D/g, "");
+  const normalizedPhone = digits.startsWith("55") ? digits : `55${digits}`;
+  return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+}
+
 export function LocalLeadsPanel() {
   const [leads, setLeads] = useState<LeadEvent[]>([]);
 
@@ -56,22 +62,37 @@ export function LocalLeadsPanel() {
               <th className="p-3">Loja</th>
               <th className="p-3">Total</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Acao</th>
             </tr>
           </thead>
           <tbody>
-            {leads.map((lead) => (
-              <tr className="border-b border-neutral-200" key={lead.id}>
-                <td className="p-3 font-bold">{lead.origin}</td>
-                <td className="p-3">{lead.customerName}</td>
-                <td className="p-3">{lead.whatsapp}</td>
-                <td className="p-3">{lead.storeName || "Marketplace"}</td>
-                <td className="p-3">{formatPrice(lead.total || 0)}</td>
-                <td className="p-3">{lead.status}</td>
-              </tr>
-            ))}
+            {leads.map((lead) => {
+              const message = `Ola ${lead.customerName}, vi seu interesse no Caruano. Como posso te ajudar?`;
+
+              return (
+                <tr className="border-b border-neutral-200" key={lead.id}>
+                  <td className="p-3 font-bold">{lead.origin}</td>
+                  <td className="p-3">{lead.customerName}</td>
+                  <td className="p-3">{lead.whatsapp}</td>
+                  <td className="p-3">{lead.storeName || "Marketplace"}</td>
+                  <td className="p-3">{formatPrice(lead.total || 0)}</td>
+                  <td className="p-3">{lead.status}</td>
+                  <td className="p-3">
+                    <a
+                      className="grid min-h-11 place-items-center rounded-[6px] bg-[#25D366] px-3 text-xs font-black uppercase text-white"
+                      href={whatsappHref(lead.whatsapp, message)}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Chamar no Zap
+                    </a>
+                  </td>
+                </tr>
+              );
+            })}
             {!leads.length ? (
               <tr>
-                <td className="p-8 text-center font-black uppercase text-neutral-500" colSpan={6}>
+                <td className="p-8 text-center font-black uppercase text-neutral-500" colSpan={7}>
                   Nenhum lead local capturado neste navegador.
                 </td>
               </tr>

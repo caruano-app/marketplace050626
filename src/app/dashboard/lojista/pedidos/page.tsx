@@ -31,6 +31,12 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
 
+function whatsappHref(phone: string, message: string) {
+  const digits = phone.replace(/\D/g, "");
+  const normalizedPhone = digits.startsWith("55") ? digits : `55${digits}`;
+  return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+}
+
 export default async function MerchantOrdersPage() {
   const orders = await getMerchantOrders();
 
@@ -55,8 +61,11 @@ export default async function MerchantOrdersPage() {
           </div>
 
           <div className="mt-4 grid gap-3">
-            {orders.map((order) => (
-              <Link className="block rounded-[8px] border border-neutral-200 p-4 transition hover:border-neutral-950" href={`/dashboard/lojista/pedidos/${order.id}`} key={order.id}>
+            {orders.map((order) => {
+              const whatsappMessage = `Ola ${order.customerName}, recebemos seu pedido #${order.id.slice(0, 8)}. Ja estamos preparando para a excursao!`;
+
+              return (
+              <article className="rounded-[8px] border border-neutral-200 p-4 transition hover:border-neutral-950" key={order.id}>
                 <article className="grid gap-3 md:grid-cols-[1fr_180px_150px] md:items-center">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -69,12 +78,21 @@ export default async function MerchantOrdersPage() {
                     <p className="mt-1 text-xs font-bold uppercase text-neutral-400">{formatDate(order.createdAt)} | {order.itemsCount} itens</p>
                   </div>
                   <p className="text-2xl font-black text-[#f58220] md:text-right">{formatPrice(order.total)}</p>
-                  <span className="grid min-h-11 place-items-center rounded-[6px] bg-neutral-950 px-4 text-sm font-black uppercase text-white">
+                  <Link className="grid min-h-11 place-items-center rounded-[6px] bg-neutral-950 px-4 text-sm font-black uppercase text-white" href={`/dashboard/lojista/pedidos/${order.id}`}>
                     Abrir
-                  </span>
+                  </Link>
                 </article>
-              </Link>
-            ))}
+                <a
+                  className="mt-3 grid min-h-11 place-items-center rounded-[6px] bg-[#25D366] px-4 text-sm font-black uppercase text-white"
+                  href={whatsappHref(order.customerPhone, whatsappMessage)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Chamar no Zap
+                </a>
+              </article>
+              );
+            })}
 
             {!orders.length ? (
               <div className="rounded-[8px] border border-dashed border-neutral-300 p-8 text-center">

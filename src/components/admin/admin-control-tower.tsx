@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import type { AdminMetrics, AdminProduct, AdminStore, AuditLog, CategorySuggestion } from "@/lib/data/admin-dashboard";
 import { documentLabels, type SignedIdentityDocument } from "@/lib/data/kyc";
 import type { AtendimentoLead } from "@/lib/data/leads";
+import { NotificationBell } from "@/components/smart-tools/notification-badge";
 
 type AdminControlTowerProps = {
   metrics: AdminMetrics;
@@ -29,6 +30,11 @@ function whatsappHref(value: string) {
   return `https://wa.me/${digits.startsWith("55") ? digits : `55${digits}`}`;
 }
 
+function isOlderThan24Hours(value: string | null) {
+  if (!value) return false;
+  return Date.now() - new Date(value).getTime() > 24 * 60 * 60 * 1000;
+}
+
 function SkeletonRows() {
   return (
     <div className="grid gap-2">
@@ -48,6 +54,15 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
   const [identityStatus, setIdentityStatus] = useState("nao_enviado");
   const [rejectReason, setRejectReason] = useState("");
   const [loadingIdentity, setLoadingIdentity] = useState(false);
+  const [urgentOnly, setUrgentOnly] = useState(false);
+
+  const urgentLeads = leads.filter((lead) => (lead.status || "novo") === "novo");
+  const urgentStores = stores.filter((store) => {
+    const status = store.usuarios?.status_verificacao_identidade || "nao_enviado";
+    return status !== "aprovado" && isOlderThan24Hours(store.criado_em);
+  });
+  const visibleLeads = urgentOnly ? urgentLeads : leads;
+  const visibleStores = urgentOnly ? urgentStores : stores;
 
   function refresh(messageText = "Dados atualizados.") {
     setMessage(messageText);
@@ -150,9 +165,12 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
             <h1 className="mt-1 text-3xl font-black uppercase leading-tight">Admin Caruano</h1>
             <p className="mt-2 text-sm font-bold text-neutral-300">Torre de controle para leads, categorias, lojistas e produtos.</p>
           </div>
-          <button className="min-h-11 rounded-[6px] bg-[#ffd700] px-4 text-sm font-black uppercase text-neutral-950" onClick={() => refresh()} type="button">
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell placement="inline" />
+            <button className="min-h-11 rounded-[6px] bg-[#ffd700] px-4 text-sm font-black uppercase text-neutral-950" onClick={() => refresh()} type="button">
+              Refresh
+            </button>
+          </div>
         </div>
         {message ? <p className="mt-3 rounded-[6px] bg-white/10 p-3 text-sm font-black text-white">{message}</p> : null}
       </section>
@@ -171,11 +189,31 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
         ))}
       </section>
 
+      <section className="rounded-[8px] border border-[#FFC300] bg-[#fff8d6] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-black uppercase text-zinc-900">Pendencias urgentes</p>
+            <p className="mt-1 text-sm font-bold text-neutral-700">
+              {urgentLeads.length} leads nao atendidos | {urgentStores.length} lojistas aguardando KYC ha mais de 24h
+            </p>
+          </div>
+          <button
+            className={`min-h-11 rounded-[6px] px-4 text-sm font-black uppercase ${
+              urgentOnly ? "bg-zinc-900 text-white" : "bg-[#FFC300] text-zinc-900"
+            }`}
+            onClick={() => setUrgentOnly((current) => !current)}
+            type="button"
+          >
+            {urgentOnly ? "Mostrar tudo" : "Filtrar urgentes"}
+          </button>
+        </div>
+      </section>
+
       <section className="rounded-[8px] bg-white p-4 shadow-sm">
         <h2 className="text-xl font-black uppercase text-neutral-950">Leads atendimento</h2>
         <div className="mt-3 space-y-3">
           {isPending ? <SkeletonRows /> : null}
-          {!isPending && leads.map((lead) => (
+          {!isPending && visibleLeads.map((lead) => (
             <article className="rounded-[8px] border border-neutral-200 p-4" key={lead.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -197,7 +235,7 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
               </div>
             </article>
           ))}
-          {!isPending && !leads.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Nenhum lead encontrado.</p> : null}
+          {!isPending && !visibleLeads.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Nenhum lead encontrado.</p> : null}
         </div>
       </section>
 
@@ -226,7 +264,7 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
         <div className="rounded-[8px] bg-white p-4 shadow-sm">
           <h2 className="text-xl font-black uppercase text-neutral-950">Lojistas em analise</h2>
           <div className="mt-3 space-y-3">
-            {stores.map((store) => (
+            {visibleStores.map((store) => (
               <article className="rounded-[8px] border border-neutral-200 p-4" key={store.id}>
                 <p className="font-black uppercase text-neutral-950">{store.nome_fantasia}</p>
                 <p className="text-xs font-bold text-neutral-500">
@@ -241,7 +279,7 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
                 </div>
               </article>
             ))}
-            {!stores.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem lojistas em analise.</p> : null}
+            {!visibleStores.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem lojistas em analise.</p> : null}
           </div>
         </div>
 
