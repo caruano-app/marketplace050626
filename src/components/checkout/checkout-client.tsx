@@ -25,6 +25,52 @@ function isLikelyUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+function inferSegment(item: { segment?: string | null; categoryName?: string | null; name: string }) {
+  if (item.segment) return item.segment;
+
+  const source = `${item.categoryName || ""} ${item.name || ""}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (/(aliment|bebida|mercado|hortifruti|comida|mercearia|padaria)/.test(source)) return "alimentacao";
+  if (/(tecido|rolo|aviamento|malha|algodao|gramatura)/.test(source)) return "tecidos";
+  if (/(moda|femin|mascul|infantil|jeans|fitness|camisaria|calcado|textil|confeccao)/.test(source)) return "moda";
+  return "geral";
+}
+
+function deliveryRecommendation(segment: string) {
+  if (segment === "alimentacao") {
+    return {
+      title: "Delivery Local (Motoboy)",
+      description: "Categoria de alimentos: excursao fica oculta no atendimento e a prioridade e entrega local rapida.",
+      tone: "bg-green-50 border-green-200 text-green-800",
+    };
+  }
+
+  if (segment === "tecidos") {
+    return {
+      title: "Frete de Carga (Van/Toyota)",
+      description: "Produto de tecido/carga: atendimento deve priorizar transporte de volume por van ou Toyota.",
+      tone: "bg-blue-50 border-blue-200 text-blue-800",
+    };
+  }
+
+  if (segment === "moda") {
+    return {
+      title: "Excursao/Onibus",
+      description: "Produto de moda: fluxo regional de excursao permanece como opcao principal.",
+      tone: "bg-[#fff8d6] border-[#ffd700] text-neutral-900",
+    };
+  }
+
+  return {
+    title: "Definir no atendimento",
+    description: "Frete sera confirmado conforme volume, cidade e disponibilidade do lojista.",
+    tone: "bg-neutral-100 border-neutral-200 text-neutral-700",
+  };
+}
+
 export function CheckoutClient() {
   const { items, increment, decrement, removeItem, clearCart } = useCartStore();
   const affiliate = useAffiliateStore((state) => state.affiliate);
@@ -44,6 +90,10 @@ export function CheckoutClient() {
       groups[item.lojistaId].push(item);
       return groups;
     }, {});
+  }, [items]);
+  const logisticsBySegment = useMemo(() => {
+    const segments = Array.from(new Set(items.map((item) => inferSegment(item))));
+    return segments.map((segment) => deliveryRecommendation(segment));
   }, [items]);
 
   const whatsappTarget = (process.env.NEXT_PUBLIC_MARKETPLACE_WHATSAPP || "").replace(/\D/g, "");
@@ -162,6 +212,8 @@ export function CheckoutClient() {
         sku: item.sku,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        categoryName: item.categoryName,
+        segment: item.segment,
         size: item.size,
         color: item.color,
         extras: item.extras,
@@ -265,6 +317,17 @@ export function CheckoutClient() {
         <section>
           <h2 className="mb-5 text-2xl font-black text-neutral-950">Dados para atendimento</h2>
           <div className="rounded-[12px] border border-neutral-500 bg-white p-5">
+            {logisticsBySegment.length ? (
+              <div className="mb-5 grid gap-3">
+                <h3 className="text-lg font-black uppercase text-neutral-950">Logistica recomendada</h3>
+                {logisticsBySegment.map((item) => (
+                  <div className={`rounded-[8px] border p-3 text-sm font-bold ${item.tone}`} key={item.title}>
+                    <p className="font-black uppercase">{item.title}</p>
+                    <p className="mt-1">{item.description}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="grid gap-4 md:grid-cols-3">
               <label className="font-bold">Nome completo<input className="mt-1 h-12 w-full border border-neutral-400 px-3 outline-none" value={name} onChange={(event) => setName(event.target.value)} /></label>
               <label className="font-bold">WhatsApp<input className="mt-1 h-12 w-full border border-neutral-400 px-3 outline-none" type="tel" value={whatsapp} onChange={(event) => setWhatsapp(formatWhatsapp(event.target.value))} /></label>

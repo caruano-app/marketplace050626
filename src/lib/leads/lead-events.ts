@@ -10,6 +10,8 @@ export type LeadEventItem = {
   sku: string;
   quantity: number;
   unitPrice: number;
+  categoryName?: string | null;
+  segment?: string | null;
   size?: string;
   color?: string;
   extras?: string;

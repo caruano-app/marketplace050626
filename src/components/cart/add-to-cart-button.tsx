@@ -21,6 +21,25 @@ function storeName(product: ProdutoVitrine) {
   return store?.nome_fantasia || "Loja Caruano";
 }
 
+function categoryName(product: ProdutoVitrine) {
+  const specs = product.especificacoes_tecnicas as { categoria_nome?: string; categoria_mestre_id?: number } | null | undefined;
+  const subcategory = Array.isArray(product.subcategorias_mestre) ? product.subcategorias_mestre[0] : product.subcategorias_mestre;
+  const category = Array.isArray(subcategory?.categorias_mestre) ? subcategory?.categorias_mestre[0] : subcategory?.categorias_mestre;
+  return specs?.categoria_nome || category?.nome_categoria || null;
+}
+
+function segmentName(product: ProdutoVitrine) {
+  const source = `${categoryName(product) || ""} ${product.nome_produto || ""}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (/(aliment|bebida|mercado|hortifruti|comida|mercearia|padaria)/.test(source)) return "alimentacao";
+  if (/(tecido|rolo|aviamento|malha|algodao|gramatura)/.test(source)) return "tecidos";
+  if (/(moda|femin|mascul|infantil|jeans|fitness|camisaria|calcado|textil|confeccao)/.test(source)) return "moda";
+  return null;
+}
+
 export function AddToCartButton({
   product,
   quantity = 1,
@@ -48,6 +67,8 @@ export function AddToCartButton({
           imageUrl: product.imagens_url?.[0] || null,
           unitPrice: unitPrice || product.preco_base_varejo,
           quantity,
+          categoryName: categoryName(product),
+          segment: segmentName(product),
           variationId,
           size,
           color,

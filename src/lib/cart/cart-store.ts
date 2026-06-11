@@ -13,6 +13,8 @@ export type CartItem = {
   imageUrl: string | null;
   unitPrice: number;
   quantity: number;
+  categoryName?: string | null;
+  segment?: string | null;
   variationId?: string | null;
   size?: string;
   color?: string;
