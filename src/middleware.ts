@@ -6,7 +6,7 @@ type UserProfile = {
   is_admin: boolean | null;
 };
 
-const protectedMatchers = ["/admin", "/dashboard/lojista"];
+const protectedMatchers = ["/admin", "/dashboard/lojista", "/dashboard/verificacao"];
 const primaryHosts = new Set(["caruano.com", "www.caruano.com"]);
 
 function isProtectedPath(pathname: string) {

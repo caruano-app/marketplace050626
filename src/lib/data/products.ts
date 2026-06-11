@@ -14,6 +14,14 @@ const fallbackProducts: ProdutoVitrine[] = Array.from({ length: 5 }, (_, index) 
   },
 }));
 
+function onlyVerifiedProducts(products: ProdutoVitrine[]) {
+  return products.filter((product) => {
+    const store = Array.isArray(product.lojistas) ? product.lojistas[0] : product.lojistas;
+    const user = Array.isArray(store?.usuarios) ? store?.usuarios[0] : store?.usuarios;
+    return user?.status_verificacao_identidade === "aprovado";
+  });
+}
+
 export async function getFeaturedProducts(): Promise<ProdutoVitrine[]> {
   const supabase = createSupabaseServerClient();
 
@@ -24,16 +32,17 @@ export async function getFeaturedProducts(): Promise<ProdutoVitrine[]> {
   const { data, error } = await supabase
     .from("produtos")
     .select(
-      "id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug)",
+      "id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug,usuarios(status_verificacao_identidade))",
     )
     .order("criado_em", { ascending: false })
-    .limit(5);
+    .limit(25);
 
   if (error || !data?.length) {
     return fallbackProducts;
   }
 
-  return data as ProdutoVitrine[];
+  const verifiedProducts = onlyVerifiedProducts(data as ProdutoVitrine[]).slice(0, 5);
+  return verifiedProducts.length ? verifiedProducts : fallbackProducts;
 }
 
 export async function getDailyOfferProducts(): Promise<ProdutoVitrine[]> {
@@ -46,14 +55,15 @@ export async function getDailyOfferProducts(): Promise<ProdutoVitrine[]> {
   const { data, error } = await supabase
     .from("produtos")
     .select(
-      "id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug)",
+      "id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug,usuarios(status_verificacao_identidade))",
     )
     .order("preco_base_varejo", { ascending: true })
-    .limit(5);
+    .limit(25);
 
   if (error || !data?.length) {
     return fallbackProducts;
   }
 
-  return data as ProdutoVitrine[];
+  const verifiedProducts = onlyVerifiedProducts(data as ProdutoVitrine[]).slice(0, 5);
+  return verifiedProducts.length ? verifiedProducts : fallbackProducts;
 }

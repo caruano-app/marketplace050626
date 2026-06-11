@@ -38,6 +38,9 @@ const fallbackProduct: ProdutoVitrine = {
   lojistas: {
     nome_fantasia: "Howem",
     slug: "howem",
+    usuarios: {
+      status_verificacao_identidade: "aprovado",
+    },
   },
   subcategorias_mestre: {
     nome_subcategoria: "Short Masculino",
@@ -85,7 +88,7 @@ export async function getProductDetail(slug: string): Promise<{
   const query = supabase
     .from("produtos")
     .select(
-      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,video_url,peso_kg,dimensoes_cm,lojistas(nome_fantasia,slug),subcategorias_mestre(nome_subcategoria,slug_subcategoria,categorias_mestre(nome_categoria,slug_categoria))",
+      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,video_url,peso_kg,dimensoes_cm,lojistas(nome_fantasia,slug,usuarios(status_verificacao_identidade)),subcategorias_mestre(nome_subcategoria,slug_subcategoria,categorias_mestre(nome_categoria,slug_categoria))",
     )
     .limit(1);
 

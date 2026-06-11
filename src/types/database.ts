@@ -9,6 +9,9 @@ export type LojistaResumo = {
   nome_fantasia: string;
   slug: string;
   parceiro_premium?: boolean | null;
+  usuarios?: {
+    status_verificacao_identidade: string | null;
+  } | Array<{ status_verificacao_identidade: string | null }> | null;
 };
 
 export type LojistaPerfil = {
@@ -23,6 +26,9 @@ export type LojistaPerfil = {
   valor_comissao_plataforma: number;
   status_operacao: string | null;
   status_funcionamento: string | null;
+  usuarios?: {
+    status_verificacao_identidade: string | null;
+  } | Array<{ status_verificacao_identidade: string | null }> | null;
   valor_minimo_pedido_atacado: number | null;
   criado_em: string;
 };

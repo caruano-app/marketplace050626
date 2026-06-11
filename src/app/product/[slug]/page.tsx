@@ -33,6 +33,12 @@ function getStoreSlug(product: ProdutoVitrine) {
   return asSingle<LojistaResumo>(product.lojistas)?.slug || "loja-caruano";
 }
 
+function isProductStoreVerified(product: ProdutoVitrine) {
+  const users = asSingle<LojistaResumo>(product.lojistas)?.usuarios;
+  const user = Array.isArray(users) ? users[0] : users;
+  return user?.status_verificacao_identidade === "aprovado";
+}
+
 function getSubcategory(product: ProdutoVitrine) {
   return asSingle<SubcategoriaResumo>(product.subcategorias_mestre);
 }
@@ -294,6 +300,27 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const storeName = getStoreName(product);
   const storeSlug = getStoreSlug(product);
   const premiumPartner = isPremiumPartner(product);
+
+  if (!isProductStoreVerified(product)) {
+    return (
+      <div className="min-h-screen bg-white">
+        <SiteHeader />
+        <main className="mx-auto max-w-[1412px] px-4 py-10">
+          <section className="rounded-[8px] border border-neutral-200 bg-neutral-100 p-6 text-center">
+            <p className="text-sm font-black uppercase text-orange-600">Produto indisponivel</p>
+            <h1 className="mt-2 text-3xl font-black uppercase text-neutral-950">Esta loja ainda esta em verificacao</h1>
+            <p className="mx-auto mt-3 max-w-2xl text-base font-bold text-neutral-600">
+              Para proteger compradores e lojistas, produtos so aparecem quando a identidade do vendedor e aprovada pelo Caruano.
+            </p>
+            <a className="mt-5 inline-grid min-h-11 place-items-center rounded-[6px] bg-[#ffd700] px-5 text-sm font-black uppercase text-neutral-950" href="/">
+              Voltar para a home
+            </a>
+          </section>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

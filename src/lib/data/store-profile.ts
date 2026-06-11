@@ -13,6 +13,9 @@ const fallbackStore: LojistaPerfil = {
   valor_comissao_plataforma: 10,
   status_operacao: "aprovado_ativo",
   status_funcionamento: "aberto",
+  usuarios: {
+    status_verificacao_identidade: "aprovado",
+  },
   valor_minimo_pedido_atacado: 0,
   criado_em: new Date(0).toISOString(),
 };
@@ -47,7 +50,7 @@ export async function getStoreProfile(slug: string): Promise<{
   const { data: store, error } = await supabase
     .from("lojistas")
     .select(
-      "id,usuario_id,nome_fantasia,slug,segmento,modalidade_coleta,valor_parametro_coleta,forma_comissionamento,valor_comissao_plataforma,status_operacao,status_funcionamento,valor_minimo_pedido_atacado,criado_em",
+      "id,usuario_id,nome_fantasia,slug,segmento,modalidade_coleta,valor_parametro_coleta,forma_comissionamento,valor_comissao_plataforma,status_operacao,status_funcionamento,valor_minimo_pedido_atacado,criado_em,usuarios(status_verificacao_identidade)",
     )
     .eq("slug", slug)
     .single();
@@ -59,17 +62,31 @@ export async function getStoreProfile(slug: string): Promise<{
     };
   }
 
+  const normalizedStore = {
+    ...store,
+    usuarios: Array.isArray(store.usuarios) ? store.usuarios[0] || null : store.usuarios,
+  } as LojistaPerfil;
+
+  const normalizedStoreUser = Array.isArray(normalizedStore.usuarios) ? normalizedStore.usuarios[0] : normalizedStore.usuarios;
+
+  if (normalizedStoreUser?.status_verificacao_identidade !== "aprovado") {
+    return {
+      store: normalizedStore,
+      products: [],
+    };
+  }
+
   const { data: products, error: productsError } = await supabase
     .from("produtos")
     .select(
-      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug)",
+      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug,usuarios(status_verificacao_identidade))",
     )
     .eq("lojista_id", store.id)
     .order("criado_em", { ascending: false })
     .limit(10);
 
   return {
-    store: store as LojistaPerfil,
+    store: normalizedStore,
     products: productsError || !products?.length ? fallbackStoreProducts : (products as ProdutoVitrine[]),
   };
 }

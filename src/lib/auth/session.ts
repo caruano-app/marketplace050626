@@ -64,7 +64,7 @@ export async function getAuthenticatedMerchant(request: NextRequest) {
 
   const { data: profile, error: profileError } = await supabase
     .from("usuarios")
-    .select("id,perfil_principal,is_admin")
+    .select("id,perfil_principal,is_admin,status_verificacao_identidade")
     .eq("id", authData.user.id)
     .maybeSingle();
 
@@ -87,6 +87,42 @@ export async function getAuthenticatedMerchant(request: NextRequest) {
     user: authData.user,
     profile,
     store,
+  };
+}
+
+export async function getAuthenticatedUser(request: NextRequest) {
+  const token = getSessionToken(request);
+
+  if (!token) {
+    return { error: "Login necessario.", status: 401 as const };
+  }
+
+  const supabase = createSupabaseRequestClient(token);
+
+  if (!supabase) {
+    return { error: "Supabase nao configurado.", status: 500 as const };
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+
+  if (authError || !authData.user) {
+    return { error: "Sessao invalida.", status: 401 as const };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("usuarios")
+    .select("id,perfil_principal,is_admin,status_verificacao_identidade")
+    .eq("id", authData.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile) {
+    return { error: "Usuario nao encontrado.", status: 404 as const };
+  }
+
+  return {
+    supabase,
+    user: authData.user,
+    profile,
   };
 }
 

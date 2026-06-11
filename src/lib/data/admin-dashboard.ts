@@ -3,10 +3,14 @@ import type { AtendimentoLead } from "@/lib/data/leads";
 
 export type AdminStore = {
   id: string;
+  usuario_id: string;
   nome_fantasia: string;
   slug: string;
   status_operacao: string | null;
   criado_em: string | null;
+  usuarios?: {
+    status_verificacao_identidade: string | null;
+  } | null;
 };
 
 export type AdminProduct = {
@@ -78,7 +82,7 @@ export async function getAdminDashboardData() {
   ] = await Promise.all([
     supabase
       .from("lojistas")
-      .select("id,nome_fantasia,slug,status_operacao,criado_em")
+      .select("id,usuario_id,nome_fantasia,slug,status_operacao,criado_em,usuarios(status_verificacao_identidade)")
       .eq("status_operacao", "analise_documental")
       .order("criado_em", { ascending: false })
       .limit(10),
@@ -122,6 +126,10 @@ export async function getAdminDashboardData() {
     ...suggestion,
     lojistas: Array.isArray(suggestion.lojistas) ? suggestion.lojistas[0] || null : suggestion.lojistas,
   })) as CategorySuggestion[];
+  const stores = (storesResult.data || []).map((store) => ({
+    ...store,
+    usuarios: Array.isArray(store.usuarios) ? store.usuarios[0] || null : store.usuarios,
+  })) as AdminStore[];
   const metrics = {
     totalLeads: totalLeadsResult.count || leads.length,
     todayLeads: todayLeadsResult.count || 0,
@@ -131,7 +139,7 @@ export async function getAdminDashboardData() {
   };
 
   return {
-    stores: (storesResult.data || []) as AdminStore[],
+    stores,
     products: (productsResult.data || []) as AdminProduct[],
     logs: (logsResult.data || []) as AuditLog[],
     leads,

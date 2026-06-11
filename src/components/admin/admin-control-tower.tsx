@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { AdminMetrics, AdminProduct, AdminStore, AuditLog, CategorySuggestion } from "@/lib/data/admin-dashboard";
+import { documentLabels, type SignedIdentityDocument } from "@/lib/data/kyc";
 import type { AtendimentoLead } from "@/lib/data/leads";
 
 type AdminControlTowerProps = {
@@ -42,6 +43,11 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
+  const [identityStore, setIdentityStore] = useState<AdminStore | null>(null);
+  const [identityDocuments, setIdentityDocuments] = useState<SignedIdentityDocument[]>([]);
+  const [identityStatus, setIdentityStatus] = useState("nao_enviado");
+  const [rejectReason, setRejectReason] = useState("");
+  const [loadingIdentity, setLoadingIdentity] = useState(false);
 
   function refresh(messageText = "Dados atualizados.") {
     setMessage(messageText);
@@ -63,6 +69,76 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
     }
 
     refresh(successMessage);
+  }
+
+  async function loadIdentityDocuments(store: AdminStore) {
+    setIdentityStore(store);
+    setLoadingIdentity(true);
+    setMessage("Gerando links temporarios dos documentos...");
+
+    const response = await fetch(`/api/admin/identity/${store.usuario_id}`, { cache: "no-store" });
+    const payload = (await response.json()) as { documents?: SignedIdentityDocument[]; status?: string; error?: string };
+
+    if (!response.ok) {
+      setMessage(payload.error || "Nao foi possivel carregar os documentos.");
+      setLoadingIdentity(false);
+      return;
+    }
+
+    setIdentityDocuments(payload.documents || []);
+    setIdentityStatus(payload.status || "nao_enviado");
+    setRejectReason("");
+    setMessage("Documentos carregados para analise.");
+    setLoadingIdentity(false);
+  }
+
+  async function updateIdentityStatus(status: "aprovado" | "rejeitado") {
+    if (!identityStore) return;
+
+    if (status === "rejeitado" && !rejectReason.trim()) {
+      setMessage("Informe o motivo da rejeicao.");
+      return;
+    }
+
+    setMessage("Atualizando verificacao de identidade...");
+    const response = await fetch(`/api/admin/identity/${identityStore.usuario_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, motivo: rejectReason }),
+    });
+    const payload = (await response.json()) as { error?: string };
+
+    if (!response.ok) {
+      setMessage(payload.error || "Nao foi possivel atualizar a verificacao.");
+      return;
+    }
+
+    setIdentityStatus(status);
+    refresh(status === "aprovado" ? "Identidade aprovada." : "Identidade rejeitada.");
+  }
+
+  function renderDocumentPreview(documentItem: SignedIdentityDocument) {
+    const isPdf = documentItem.url_arquivo.toLowerCase().endsWith(".pdf");
+
+    return (
+      <article className="rounded-[8px] border border-neutral-200 bg-white p-3" key={documentItem.id}>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-black uppercase text-neutral-950">{documentLabels[documentItem.tipo] || documentItem.tipo}</p>
+          <span className="rounded-full bg-neutral-100 px-2 py-1 text-[11px] font-black uppercase text-neutral-600">{documentItem.status}</span>
+        </div>
+        {documentItem.signed_url ? (
+          <div className="mt-3 overflow-hidden rounded-[6px] border border-neutral-200 bg-neutral-100">
+            {isPdf ? (
+              <iframe className="h-64 w-full" src={documentItem.signed_url} title={documentLabels[documentItem.tipo] || documentItem.tipo} />
+            ) : (
+              <iframe className="h-64 w-full" src={documentItem.signed_url} title={documentLabels[documentItem.tipo] || documentItem.tipo} />
+            )}
+          </div>
+        ) : (
+          <p className="mt-3 rounded-[6px] bg-red-50 p-3 text-xs font-black uppercase text-red-700">Link temporario indisponivel.</p>
+        )}
+      </article>
+    );
   }
 
   return (
@@ -153,8 +229,13 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
             {stores.map((store) => (
               <article className="rounded-[8px] border border-neutral-200 p-4" key={store.id}>
                 <p className="font-black uppercase text-neutral-950">{store.nome_fantasia}</p>
-                <p className="text-xs font-bold text-neutral-500">{store.status_operacao}</p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
+                <p className="text-xs font-bold text-neutral-500">
+                  {store.status_operacao} | KYC {store.usuarios?.status_verificacao_identidade || "nao_enviado"}
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <button className="min-h-11 rounded-[6px] bg-[#ffd700] text-sm font-black uppercase text-neutral-950" onClick={() => loadIdentityDocuments(store)} type="button">
+                    Ver documentos
+                  </button>
                   <button className="min-h-11 rounded-[6px] bg-[#00a86b] text-sm font-black uppercase text-white" onClick={() => patchAction(`/api/admin/stores/${store.id}/status`, { status: "ativo" }, "Lojista aprovado.")} type="button">Aprovar</button>
                   <button className="min-h-11 rounded-[6px] bg-red-600 text-sm font-black uppercase text-white" onClick={() => patchAction(`/api/admin/stores/${store.id}/status`, { status: "rejeitado" }, "Lojista rejeitado.")} type="button">Rejeitar</button>
                 </div>
@@ -194,6 +275,55 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
           {!logs.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem logs recentes.</p> : null}
         </div>
       </section>
+
+      {identityStore ? (
+        <section className="fixed inset-x-0 bottom-0 z-50 max-h-[88vh] overflow-y-auto rounded-t-[12px] border border-neutral-200 bg-neutral-100 p-4 shadow-2xl md:left-1/2 md:max-w-5xl md:-translate-x-1/2">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-black uppercase text-orange-600">Verificacao de identidade</p>
+              <h2 className="text-2xl font-black uppercase text-neutral-950">{identityStore.nome_fantasia}</h2>
+              <p className="text-sm font-bold uppercase text-neutral-600">Status: {identityStatus}</p>
+            </div>
+            <button className="min-h-11 rounded-[6px] bg-neutral-950 px-4 text-sm font-black uppercase text-white" onClick={() => setIdentityStore(null)} type="button">
+              Fechar
+            </button>
+          </div>
+
+          {loadingIdentity ? <SkeletonRows /> : null}
+
+          {!loadingIdentity ? (
+            <>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {identityDocuments.map((documentItem) => renderDocumentPreview(documentItem))}
+              </div>
+              {!identityDocuments.length ? (
+                <p className="mt-4 rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">
+                  Nenhum documento enviado.
+                </p>
+              ) : null}
+
+              <label className="mt-4 block rounded-[8px] bg-white p-3 text-sm font-black uppercase text-neutral-950">
+                Motivo da rejeicao
+                <textarea
+                  className="mt-2 min-h-24 w-full rounded-[6px] border border-neutral-300 p-3 text-sm font-bold normal-case outline-none focus:border-neutral-950"
+                  onChange={(event) => setRejectReason(event.target.value)}
+                  placeholder="Explique o que o lojista precisa reenviar."
+                  value={rejectReason}
+                />
+              </label>
+
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <button className="min-h-11 rounded-[6px] bg-[#00a86b] text-sm font-black uppercase text-white" onClick={() => updateIdentityStatus("aprovado")} type="button">
+                  Aprovar identidade
+                </button>
+                <button className="min-h-11 rounded-[6px] bg-red-600 text-sm font-black uppercase text-white" onClick={() => updateIdentityStatus("rejeitado")} type="button">
+                  Rejeitar identidade
+                </button>
+              </div>
+            </>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }
