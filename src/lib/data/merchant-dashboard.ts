@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getManagedStockByStore, type ManagedStockItem } from "@/lib/data/managed-stock";
 
 export type MerchantLeadMetric = {
   total: number;
@@ -40,6 +41,27 @@ export type MerchantReviewSummary = {
   totalReviews: number;
   latest: MerchantReviewItem[];
 };
+
+export async function getMerchantManagedStock(): Promise<ManagedStockItem[]> {
+  const supabase = createSupabaseServerClient();
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data: store } = await supabase
+    .from("lojistas")
+    .select("id")
+    .order("criado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!store?.id) {
+    return [];
+  }
+
+  return getManagedStockByStore(store.id, 10);
+}
 
 export async function getMerchantLeadMetric(): Promise<MerchantLeadMetric> {
   const supabase = createSupabaseServerClient();

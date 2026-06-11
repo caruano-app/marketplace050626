@@ -1,4 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAdminBenefits, type BenefitOffer } from "@/lib/data/benefits";
+import { getConsumptionOpportunities, type ConsumptionProfile } from "@/lib/data/consumption-profile";
+import { getManagedStock, type ManagedStockItem } from "@/lib/data/managed-stock";
+import { getSupplyOrders, type SupplyOrder } from "@/lib/data/supply-orders";
 import type { AtendimentoLead } from "@/lib/data/leads";
 
 export type AdminStore = {
@@ -75,6 +79,13 @@ export type AdminMetrics = {
   volume: number;
 };
 
+export type AdminEcosystemData = {
+  benefits: BenefitOffer[];
+  managedStock: ManagedStockItem[];
+  supplyOrders: SupplyOrder[];
+  opportunities: ConsumptionProfile[];
+};
+
 const emptyMetrics: AdminMetrics = {
   totalLeads: 0,
   todayLeads: 0,
@@ -87,7 +98,18 @@ export async function getAdminDashboardData() {
   const supabase = createSupabaseServerClient();
 
   if (!supabase) {
-    return { stores: [], drivers: [], products: [], logs: [], leads: [], categorySuggestions: [], reviews: [], metrics: emptyMetrics, volume: 0 };
+    return {
+      stores: [],
+      drivers: [],
+      products: [],
+      logs: [],
+      leads: [],
+      categorySuggestions: [],
+      reviews: [],
+      ecosystem: { benefits: [], managedStock: [], supplyOrders: [], opportunities: [] },
+      metrics: emptyMetrics,
+      volume: 0,
+    };
   }
 
   const today = new Date();
@@ -106,6 +128,10 @@ export async function getAdminDashboardData() {
     productsCountResult,
     reviewsResult,
     driversResult,
+    benefits,
+    managedStock,
+    supplyOrders,
+    opportunities,
   ] = await Promise.all([
     supabase
       .from("lojistas")
@@ -152,6 +178,10 @@ export async function getAdminDashboardData() {
       .from("entregadores")
       .select("id,usuario_id,usuarios(nome_completo,telefone,status_verificacao_identidade)")
       .limit(30),
+    getAdminBenefits(),
+    getManagedStock(),
+    getSupplyOrders(),
+    getConsumptionOpportunities(),
   ]);
 
   const volume = (volumeResult.data || []).reduce((sum, item) => sum + Number(item.valor_total_checkout || 0), 0);
@@ -200,6 +230,12 @@ export async function getAdminDashboardData() {
     leads,
     categorySuggestions,
     reviews,
+    ecosystem: {
+      benefits,
+      managedStock,
+      supplyOrders,
+      opportunities,
+    },
     metrics,
     volume,
   };

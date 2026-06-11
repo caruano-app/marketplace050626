@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { AdminDriver, AdminMetrics, AdminProduct, AdminReview, AdminStore, AuditLog, CategorySuggestion } from "@/lib/data/admin-dashboard";
+import type { AdminDriver, AdminEcosystemData, AdminMetrics, AdminProduct, AdminReview, AdminStore, AuditLog, CategorySuggestion } from "@/lib/data/admin-dashboard";
+import { opportunityLabel } from "@/lib/data/consumption-profile";
+import { isStockBelowMinimum } from "@/lib/data/managed-stock";
 import { documentLabels, type SignedIdentityDocument } from "@/lib/data/kyc";
 import type { AtendimentoLead } from "@/lib/data/leads";
 import { NotificationBell } from "@/components/smart-tools/notification-badge";
@@ -18,6 +20,7 @@ type AdminControlTowerProps = {
   stores: AdminStore[];
   products: AdminProduct[];
   logs: AuditLog[];
+  ecosystem: AdminEcosystemData;
 };
 
 type IdentitySubject = {
@@ -73,7 +76,7 @@ function ReviewStars({ value }: { value: number }) {
   );
 }
 
-export function AdminControlTower({ metrics, leads, categorySuggestions, reviews, drivers, stores, products, logs }: AdminControlTowerProps) {
+export function AdminControlTower({ metrics, leads, categorySuggestions, reviews, drivers, stores, products, logs, ecosystem }: AdminControlTowerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
@@ -285,6 +288,83 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, reviews
             </article>
           ))}
           {!categorySuggestions.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem sugestoes pendentes.</p> : null}
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-[8px] bg-white p-4 shadow-sm">
+          <h2 className="text-xl font-black uppercase text-neutral-950">Clube de beneficios</h2>
+          <div className="mt-3 space-y-3">
+            {ecosystem.benefits.slice(0, 6).map((benefit) => (
+              <article className="rounded-[8px] border border-neutral-200 p-4" key={benefit.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black uppercase text-neutral-950">{benefit.titulo}</p>
+                    <p className="mt-1 text-xs font-bold uppercase text-neutral-500">{benefit.categoria || "Beneficio"} | {benefit.lojistas?.nome_fantasia || "Parceiro Caruano"}</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-black uppercase ${benefit.ativo ? "bg-green-100 text-green-800" : "bg-neutral-100 text-neutral-600"}`}>
+                    {benefit.ativo ? "Ativo" : "Inativo"}
+                  </span>
+                </div>
+              </article>
+            ))}
+            {!ecosystem.benefits.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem beneficios cadastrados.</p> : null}
+          </div>
+        </div>
+
+        <div className="rounded-[8px] bg-white p-4 shadow-sm">
+          <h2 className="text-xl font-black uppercase text-neutral-950">Oportunidades de servicos</h2>
+          <div className="mt-3 space-y-3">
+            {ecosystem.opportunities.slice(0, 6).map((profile) => (
+              <article className="rounded-[8px] border border-neutral-200 p-4" key={profile.id}>
+                <p className="text-sm font-black uppercase text-neutral-950">{profile.usuarios?.nome_completo || "Usuario Caruano"}</p>
+                <p className="mt-1 text-xs font-bold uppercase text-neutral-500">{profile.usuarios?.perfil_principal || "perfil"} | {profile.usuarios?.telefone || "sem telefone"}</p>
+                <p className="mt-3 rounded-[6px] bg-[#fff8d6] p-3 text-sm font-black text-neutral-950">{opportunityLabel(profile)}</p>
+              </article>
+            ))}
+            {!ecosystem.opportunities.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem perfis de consumo ainda.</p> : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-[8px] bg-white p-4 shadow-sm">
+          <h2 className="text-xl font-black uppercase text-neutral-950">Estoque gerenciado</h2>
+          <div className="mt-3 space-y-3">
+            {ecosystem.managedStock.slice(0, 8).map((item) => (
+              <article className={`rounded-[8px] border p-4 ${isStockBelowMinimum(item) ? "border-red-200 bg-red-50" : "border-neutral-200 bg-white"}`} key={item.id}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black uppercase text-neutral-950">{item.produtos?.nome_produto || "Produto sem nome"}</p>
+                    <p className="mt-1 text-xs font-bold uppercase text-neutral-500">{item.produtos?.lojistas?.nome_fantasia || "Vendido por Caruano"} | {item.localizacao_fisica || "Sem localizacao"}</p>
+                  </div>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-neutral-700">
+                    {item.quantidade_atual || 0}/{item.quantidade_minima_alerta || 0}
+                  </span>
+                </div>
+              </article>
+            ))}
+            {!ecosystem.managedStock.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem estoque gerenciado.</p> : null}
+          </div>
+        </div>
+
+        <div className="rounded-[8px] bg-white p-4 shadow-sm">
+          <h2 className="text-xl font-black uppercase text-neutral-950">Ordens de abastecimento</h2>
+          <div className="mt-3 space-y-3">
+            {ecosystem.supplyOrders.slice(0, 8).map((order) => (
+              <article className="rounded-[8px] border border-neutral-200 p-4" key={order.id}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black uppercase text-neutral-950">Ordem #{order.id.slice(0, 8)}</p>
+                    <p className="mt-1 text-xs font-bold uppercase text-neutral-500">{order.comprador?.nome_fantasia || "Comprador"} para {order.fornecedor?.nome_fantasia || "Distribuidora a definir"}</p>
+                  </div>
+                  <span className="rounded-full bg-[#ffd700] px-3 py-1 text-xs font-black uppercase text-neutral-950">{order.status || "analise"}</span>
+                </div>
+                <p className="mt-3 text-lg font-black text-[#f58220]">{formatPrice(Number(order.valor_total || 0))}</p>
+              </article>
+            ))}
+            {!ecosystem.supplyOrders.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem ordens de abastecimento.</p> : null}
+          </div>
         </div>
       </section>
 

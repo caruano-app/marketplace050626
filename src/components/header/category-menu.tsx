@@ -29,6 +29,14 @@ export function CategoryMenu({ categories }: CategoryMenuProps) {
               <span className="ml-1 text-xl">v</span>
             </a>
           ))}
+          <a className="whitespace-nowrap text-lg font-black uppercase text-neutral-950" href="/insumos">
+            Insumos
+            <span className="ml-1 text-xl">v</span>
+          </a>
+          <a className="whitespace-nowrap text-lg font-black uppercase text-neutral-950" href="/clube">
+            Clube
+            <span className="ml-1 text-xl">v</span>
+          </a>
         </div>
 
         <a

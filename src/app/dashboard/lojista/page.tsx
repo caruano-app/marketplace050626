@@ -3,7 +3,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { MerchantDashboardApp } from "@/components/dashboard/merchant-dashboard-app";
 import { NotificationBell } from "@/components/smart-tools/notification-badge";
 import { TrackableQrCode } from "@/components/qrcode/trackable-qr-code";
-import { getMerchantLeadMetric, getMerchantProducts, getMerchantReviewSummary, getMerchantStoreQr, getPendingQuotes } from "@/lib/data/merchant-dashboard";
+import { getMerchantLeadMetric, getMerchantManagedStock, getMerchantProducts, getMerchantReviewSummary, getMerchantStoreQr, getPendingQuotes } from "@/lib/data/merchant-dashboard";
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -43,12 +43,13 @@ function ReviewStars({ value }: { value: number }) {
 }
 
 export default async function MerchantDashboardPage() {
-  const [metrics, quotes, products, storeQr, reviewSummary] = await Promise.all([
+  const [metrics, quotes, products, storeQr, reviewSummary, managedStock] = await Promise.all([
     getMerchantLeadMetric(),
     getPendingQuotes(),
     getMerchantProducts(),
     getMerchantStoreQr(),
     getMerchantReviewSummary(),
+    getMerchantManagedStock(),
   ]);
   const totalSales = quotes.reduce((sum, quote) => sum + Number(quote.valor_proposto || 0), 0);
 
@@ -153,7 +154,7 @@ export default async function MerchantDashboardPage() {
             ) : null}
           </div>
         </section>
-        <MerchantDashboardApp products={products} quotes={quotes} />
+        <MerchantDashboardApp managedStock={managedStock} products={products} quotes={quotes} />
         <div className="mt-4">
           <TrackableQrCode
             fileName={`qr-loja-${storeQr.slug}`}
