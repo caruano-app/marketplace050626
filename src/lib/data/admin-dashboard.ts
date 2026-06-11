@@ -13,6 +13,14 @@ export type AdminStore = {
   } | null;
 };
 
+export type AdminDriver = {
+  id: string;
+  usuario_id: string;
+  nome_entregador: string;
+  telefone: string | null;
+  status_verificacao_identidade: string | null;
+};
+
 export type AdminProduct = {
   id: string;
   nome_produto: string;
@@ -79,7 +87,7 @@ export async function getAdminDashboardData() {
   const supabase = createSupabaseServerClient();
 
   if (!supabase) {
-    return { stores: [], products: [], logs: [], leads: [], categorySuggestions: [], reviews: [], metrics: emptyMetrics, volume: 0 };
+    return { stores: [], drivers: [], products: [], logs: [], leads: [], categorySuggestions: [], reviews: [], metrics: emptyMetrics, volume: 0 };
   }
 
   const today = new Date();
@@ -97,6 +105,7 @@ export async function getAdminDashboardData() {
     activeStoresResult,
     productsCountResult,
     reviewsResult,
+    driversResult,
   ] = await Promise.all([
     supabase
       .from("lojistas")
@@ -139,6 +148,10 @@ export async function getAdminDashboardData() {
       .eq("status", "pendente")
       .order("criado_em", { ascending: false })
       .limit(20),
+    supabase
+      .from("entregadores")
+      .select("id,usuario_id,usuarios(nome_completo,telefone,status_verificacao_identidade)")
+      .limit(30),
   ]);
 
   const volume = (volumeResult.data || []).reduce((sum, item) => sum + Number(item.valor_total_checkout || 0), 0);
@@ -160,6 +173,17 @@ export async function getAdminDashboardData() {
     produtos: Array.isArray(review.produtos) ? review.produtos[0] || null : review.produtos,
     lojistas: Array.isArray(review.lojistas) ? review.lojistas[0] || null : review.lojistas,
   })) as AdminReview[];
+  const drivers = (driversResult.data || []).map((driver) => {
+    const user = Array.isArray(driver.usuarios) ? driver.usuarios[0] || null : driver.usuarios;
+
+    return {
+      id: String(driver.id),
+      usuario_id: String(driver.usuario_id),
+      nome_entregador: user?.nome_completo || "Entregador Caruano",
+      telefone: user?.telefone || null,
+      status_verificacao_identidade: user?.status_verificacao_identidade || "nao_enviado",
+    };
+  }) as AdminDriver[];
   const metrics = {
     totalLeads: totalLeadsResult.count || leads.length,
     todayLeads: todayLeadsResult.count || 0,
@@ -170,6 +194,7 @@ export async function getAdminDashboardData() {
 
   return {
     stores,
+    drivers,
     products: (productsResult.data || []) as AdminProduct[],
     logs: (logsResult.data || []) as AuditLog[],
     leads,

@@ -90,6 +90,53 @@ export async function getAuthenticatedMerchant(request: NextRequest) {
   };
 }
 
+export async function getAuthenticatedDriver(request: NextRequest) {
+  const token = getSessionToken(request);
+
+  if (!token) {
+    return { error: "Login necessario.", status: 401 as const };
+  }
+
+  const supabase = createSupabaseRequestClient(token);
+
+  if (!supabase) {
+    return { error: "Supabase nao configurado.", status: 500 as const };
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+
+  if (authError || !authData.user) {
+    return { error: "Sessao invalida.", status: 401 as const };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("usuarios")
+    .select("id,perfil_principal,is_admin,status_verificacao_identidade")
+    .eq("id", authData.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile || profile.perfil_principal !== "entregador") {
+    return { error: "Acesso restrito a entregadores.", status: 403 as const };
+  }
+
+  const { data: driver, error: driverError } = await supabase
+    .from("entregadores")
+    .select("id,usuario_id")
+    .eq("usuario_id", authData.user.id)
+    .maybeSingle();
+
+  if (driverError || !driver) {
+    return { error: "Entregador nao encontrado para este usuario.", status: 404 as const };
+  }
+
+  return {
+    supabase,
+    user: authData.user,
+    profile,
+    driver,
+  };
+}
+
 export async function getAuthenticatedUser(request: NextRequest) {
   const token = getSessionToken(request);
 

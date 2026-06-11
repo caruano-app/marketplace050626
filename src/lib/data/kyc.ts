@@ -7,6 +7,8 @@ export const identityDocumentTypes = [
   "comprovante_vinculo",
   "selfie_identidade",
   "comprovante_endereco",
+  "crlv",
+  "foto_veiculo",
 ] as const;
 
 export type IdentityDocumentType = (typeof identityDocumentTypes)[number];
@@ -36,6 +38,8 @@ export const documentLabels: Record<IdentityDocumentType, string> = {
   comprovante_vinculo: "Comprovante de vinculo",
   selfie_identidade: "Selfie de identidade",
   comprovante_endereco: "Comprovante de endereco",
+  crlv: "CRLV do veiculo",
+  foto_veiculo: "Foto do veiculo",
 };
 
 export function isIdentityDocumentType(value: string): value is IdentityDocumentType {

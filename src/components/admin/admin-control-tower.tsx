@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { AdminMetrics, AdminProduct, AdminReview, AdminStore, AuditLog, CategorySuggestion } from "@/lib/data/admin-dashboard";
+import type { AdminDriver, AdminMetrics, AdminProduct, AdminReview, AdminStore, AuditLog, CategorySuggestion } from "@/lib/data/admin-dashboard";
 import { documentLabels, type SignedIdentityDocument } from "@/lib/data/kyc";
 import type { AtendimentoLead } from "@/lib/data/leads";
 import { NotificationBell } from "@/components/smart-tools/notification-badge";
@@ -14,9 +14,15 @@ type AdminControlTowerProps = {
   leads: AtendimentoLead[];
   categorySuggestions: CategorySuggestion[];
   reviews: AdminReview[];
+  drivers: AdminDriver[];
   stores: AdminStore[];
   products: AdminProduct[];
   logs: AuditLog[];
+};
+
+type IdentitySubject = {
+  usuario_id: string;
+  nome_fantasia: string;
 };
 
 function formatPrice(value: number) {
@@ -67,11 +73,11 @@ function ReviewStars({ value }: { value: number }) {
   );
 }
 
-export function AdminControlTower({ metrics, leads, categorySuggestions, reviews, stores, products, logs }: AdminControlTowerProps) {
+export function AdminControlTower({ metrics, leads, categorySuggestions, reviews, drivers, stores, products, logs }: AdminControlTowerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
-  const [identityStore, setIdentityStore] = useState<AdminStore | null>(null);
+  const [identityStore, setIdentityStore] = useState<IdentitySubject | null>(null);
   const [identityDocuments, setIdentityDocuments] = useState<SignedIdentityDocument[]>([]);
   const [identityStatus, setIdentityStatus] = useState("nao_enviado");
   const [rejectReason, setRejectReason] = useState("");
@@ -108,12 +114,12 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, reviews
     refresh(successMessage);
   }
 
-  async function loadIdentityDocuments(store: AdminStore) {
-    setIdentityStore(store);
+  async function loadIdentityDocuments(subject: IdentitySubject) {
+    setIdentityStore(subject);
     setLoadingIdentity(true);
     setMessage("Gerando links temporarios dos documentos...");
 
-    const response = await fetch(`/api/admin/identity/${store.usuario_id}`, { cache: "no-store" });
+    const response = await fetch(`/api/admin/identity/${subject.usuario_id}`, { cache: "no-store" });
     const payload = (await response.json()) as { documents?: SignedIdentityDocument[]; status?: string; error?: string };
 
     if (!response.ok) {
@@ -340,6 +346,43 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, reviews
           </div>
         </div>
 
+        <div className="rounded-[8px] bg-white p-4 shadow-sm">
+          <h2 className="text-xl font-black uppercase text-neutral-950">Aprovacao de entregadores</h2>
+          <div className="mt-3 space-y-3">
+            {drivers.map((driver) => (
+              <article className="rounded-[8px] border border-neutral-200 p-4" key={driver.id}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black uppercase text-neutral-950">{driver.nome_entregador}</p>
+                    <p className="text-xs font-bold text-neutral-500">{driver.telefone || "Telefone nao informado"}</p>
+                  </div>
+                  <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-black uppercase text-neutral-700">
+                    {driver.status_verificacao_identidade || "nao_enviado"}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <button
+                    className="min-h-11 rounded-[6px] bg-[#ffd700] text-sm font-black uppercase text-neutral-950"
+                    onClick={() => loadIdentityDocuments({ usuario_id: driver.usuario_id, nome_fantasia: driver.nome_entregador })}
+                    type="button"
+                  >
+                    Ver documentos
+                  </button>
+                  <button className="min-h-11 rounded-[6px] bg-[#00a86b] text-sm font-black uppercase text-white" onClick={() => patchAction(`/api/admin/identity/${driver.usuario_id}`, { status: "aprovado" }, "Entregador aprovado.")} type="button">
+                    Aprovar
+                  </button>
+                  <button className="min-h-11 rounded-[6px] bg-red-600 text-sm font-black uppercase text-white" onClick={() => patchAction(`/api/admin/identity/${driver.usuario_id}`, { status: "rejeitado", motivo: "Documentacao do transportador rejeitada." }, "Entregador rejeitado.")} type="button">
+                    Rejeitar
+                  </button>
+                </div>
+              </article>
+            ))}
+            {!drivers.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem entregadores cadastrados.</p> : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-[8px] bg-white p-4 shadow-sm">
           <h2 className="text-xl font-black uppercase text-neutral-950">Produtos pendentes</h2>
           <div className="mt-3 space-y-3">
