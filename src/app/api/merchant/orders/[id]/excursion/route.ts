@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   const { data: order, error: orderError } = await merchant.supabase
     .from("sub_pedidos_loja")
-    .select("id,lojista_id")
+    .select("id,lojista_id,transacoes_mestre(comprador_id)")
     .eq("id", params.id)
     .eq("lojista_id", merchant.store.id)
     .maybeSingle();
@@ -101,6 +101,20 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     .update({ status_preparacao: "pronto_coleta" })
     .eq("id", params.id)
     .eq("lojista_id", merchant.store.id);
+
+  const transaction = Array.isArray(order.transacoes_mestre) ? order.transacoes_mestre[0] : order.transacoes_mestre;
+  const buyerId = transaction?.comprador_id;
+
+  if (buyerId && proofUrl) {
+    await merchant.supabase.from("notificacoes").insert({
+      usuario_id: buyerId,
+      titulo: `Seu fardo da loja ${merchant.store.nome_fantasia} ja esta no onibus!`,
+      mensagem: "O lojista anexou a foto do comprovante da entrega na excursao.",
+      tipo: "logistica",
+      lida: false,
+      link_acao: "/dashboard/comprador",
+    });
+  }
 
   return NextResponse.json({ ok: true, proofUrl });
 }

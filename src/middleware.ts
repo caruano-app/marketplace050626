@@ -6,7 +6,7 @@ type UserProfile = {
   is_admin: boolean | null;
 };
 
-const protectedMatchers = ["/admin", "/dashboard/lojista", "/dashboard/verificacao"];
+const protectedMatchers = ["/admin", "/dashboard/lojista", "/dashboard/comprador", "/dashboard/verificacao"];
 const primaryHosts = new Set(["caruano.com", "www.caruano.com"]);
 
 function isProtectedPath(pathname: string) {
@@ -114,6 +114,15 @@ export async function middleware(request: NextRequest) {
   if (
     (pathname === "/dashboard/lojista" || pathname.startsWith("/dashboard/lojista/")) &&
     userProfile.perfil_principal !== "lojista"
+  ) {
+    const response = redirectToLogin(request);
+    if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  }
+
+  if (
+    (pathname === "/dashboard/comprador" || pathname.startsWith("/dashboard/comprador/")) &&
+    userProfile.perfil_principal !== "cliente"
   ) {
     const response = redirectToLogin(request);
     if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
