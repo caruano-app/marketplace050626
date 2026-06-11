@@ -6,6 +6,14 @@ export type WholesalePriceRule = {
   preco_unitario_atacado: number;
 };
 
+export type ProductCustomerReview = {
+  id: string;
+  nota: number;
+  comentario: string | null;
+  criado_em: string | null;
+  customerName: string;
+};
+
 const fallbackProduct: ProdutoVitrine = {
   id: "fallback-1",
   lojista_id: "fallback-lojista",
@@ -69,6 +77,8 @@ export async function getProductDetail(slug: string): Promise<{
   product: ProdutoVitrine;
   variations: VariacaoProduto[];
   wholesalePricing: WholesalePriceRule[];
+  reviews: ProductCustomerReview[];
+  reviewAverage: number;
 }> {
   const supabase = createSupabaseServerClient();
 
@@ -82,6 +92,8 @@ export async function getProductDetail(slug: string): Promise<{
           preco_unitario_atacado: 49.9,
         },
       ],
+      reviews: [],
+      reviewAverage: 0,
     };
   }
 
@@ -106,6 +118,8 @@ export async function getProductDetail(slug: string): Promise<{
           preco_unitario_atacado: 49.9,
         },
       ],
+      reviews: [],
+      reviewAverage: 0,
     };
   }
 
@@ -121,9 +135,36 @@ export async function getProductDetail(slug: string): Promise<{
     .eq("produto_id", product.id)
     .order("quantidade_minima", { ascending: true });
 
+  const { data: reviews, error: reviewsError } = await supabase
+    .from("avaliacoes_comentarios")
+    .select("id,nota,comentario,criado_em,usuarios(nome_completo)")
+    .eq("produto_id", product.id)
+    .eq("status", "aprovado")
+    .order("criado_em", { ascending: false })
+    .limit(20);
+
+  const normalizedReviews = reviewsError || !reviews
+    ? []
+    : reviews.map((review) => {
+        const user = Array.isArray(review.usuarios) ? review.usuarios[0] || null : review.usuarios;
+
+        return {
+          id: String(review.id),
+          nota: Number(review.nota || 0),
+          comentario: review.comentario || null,
+          criado_em: review.criado_em || null,
+          customerName: user?.nome_completo || "Cliente Caruano",
+        };
+      });
+  const reviewAverage = normalizedReviews.length
+    ? normalizedReviews.reduce((sum, review) => sum + review.nota, 0) / normalizedReviews.length
+    : 0;
+
   return {
     product: product as ProdutoVitrine,
     variations: variationsError || !variations?.length ? fallbackVariations : (variations as VariacaoProduto[]),
     wholesalePricing: wholesaleError || !wholesalePricing ? [] : (wholesalePricing as WholesalePriceRule[]),
+    reviews: normalizedReviews,
+    reviewAverage,
   };
 }

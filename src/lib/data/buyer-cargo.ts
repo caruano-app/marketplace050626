@@ -3,12 +3,15 @@ import type { MerchantOrderStatus } from "@/lib/data/merchant-orders";
 
 export type BuyerCargoOrder = {
   id: string;
+  lojistaId: string | null;
   status: MerchantOrderStatus;
   createdAt: string | null;
   storeName: string;
   storeVerified: boolean;
   total: number;
   itemsCount: number;
+  reviewTargetProductId: string | null;
+  reviewTargetProductName: string | null;
   shipment: {
     excursionName: string | null;
     guideName: string | null;
@@ -26,6 +29,7 @@ export type BuyerCargoSummary = {
 
 type CargoRow = {
   id: string;
+  lojista_id?: string | null;
   valor_produtos_loja?: number | null;
   valor_frete_loja?: number | null;
   status_preparacao?: string | null;
@@ -37,7 +41,11 @@ type CargoRow = {
     nome_fantasia?: string | null;
     usuarios?: { status_verificacao_identidade?: string | null } | Array<{ status_verificacao_identidade?: string | null }> | null;
   }> | null;
-  itens_pedido?: Array<{ quantidade?: number | null }> | null;
+  itens_pedido?: Array<{
+    quantidade?: number | null;
+    produto_id?: string | null;
+    produtos?: { nome_produto?: string | null } | Array<{ nome_produto?: string | null }> | null;
+  }> | null;
   envio_via_excursao?: Array<{
     nome_guia?: string | null;
     numero_vaga_box?: string | null;
@@ -71,12 +79,16 @@ function orderFromRow(row: CargoRow): BuyerCargoOrder {
 
   return {
     id: row.id,
+    lojistaId: row.lojista_id || null,
     status: normalizeStatus(row.status_preparacao),
     createdAt: row.criado_em || null,
     storeName: store?.nome_fantasia || "Loja Caruano",
     storeVerified: verifiedFromStore(row.lojistas),
     total: Number(row.valor_produtos_loja || 0) + Number(row.valor_frete_loja || 0),
     itemsCount: (row.itens_pedido || []).reduce((sum, item) => sum + Number(item.quantidade || 0), 0),
+    reviewTargetProductId: row.itens_pedido?.find((item) => item.produto_id)?.produto_id || null,
+    reviewTargetProductName:
+      first(row.itens_pedido?.find((item) => item.produto_id)?.produtos)?.nome_produto || "Produto Caruano",
     shipment: shipmentRow
       ? {
           excursionName: excursion?.nome_transportadora || excursion?.nome || null,
@@ -100,7 +112,7 @@ export async function getBuyerCargo(userId: string): Promise<{ orders: BuyerCarg
   const { data, error } = await supabase
     .from("sub_pedidos_loja")
     .select(
-      "id,valor_produtos_loja,valor_frete_loja,status_preparacao,criado_em,lojistas(nome_fantasia,usuarios(status_verificacao_identidade)),transacoes_mestre!inner(comprador_id),itens_pedido(quantidade),envio_via_excursao(nome_guia,numero_vaga_box,cor_setor,foto_comprovante_vaga_url,status_entrega,excursos_transportadoras(nome_transportadora,nome))",
+      "id,lojista_id,valor_produtos_loja,valor_frete_loja,status_preparacao,criado_em,lojistas(nome_fantasia,usuarios(status_verificacao_identidade)),transacoes_mestre!inner(comprador_id),itens_pedido(quantidade,produto_id,produtos(nome_produto)),envio_via_excursao(nome_guia,numero_vaga_box,cor_setor,foto_comprovante_vaga_url,status_entrega,excursos_transportadoras(nome_transportadora,nome))",
     )
     .eq("transacoes_mestre.comprador_id", userId)
     .order("criado_em", { ascending: false })

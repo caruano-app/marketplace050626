@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { AdminMetrics, AdminProduct, AdminStore, AuditLog, CategorySuggestion } from "@/lib/data/admin-dashboard";
+import type { AdminMetrics, AdminProduct, AdminReview, AdminStore, AuditLog, CategorySuggestion } from "@/lib/data/admin-dashboard";
 import { documentLabels, type SignedIdentityDocument } from "@/lib/data/kyc";
 import type { AtendimentoLead } from "@/lib/data/leads";
 import { NotificationBell } from "@/components/smart-tools/notification-badge";
@@ -13,6 +13,7 @@ type AdminControlTowerProps = {
   metrics: AdminMetrics;
   leads: AtendimentoLead[];
   categorySuggestions: CategorySuggestion[];
+  reviews: AdminReview[];
   stores: AdminStore[];
   products: AdminProduct[];
   logs: AuditLog[];
@@ -47,7 +48,26 @@ function SkeletonRows() {
   );
 }
 
-export function AdminControlTower({ metrics, leads, categorySuggestions, stores, products, logs }: AdminControlTowerProps) {
+function ReviewStars({ value }: { value: number }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <svg
+          aria-hidden="true"
+          className={star <= Math.round(value) ? "fill-[#FFC300] text-[#FFC300]" : "fill-none text-neutral-400"}
+          height="18"
+          key={star}
+          viewBox="0 0 24 24"
+          width="18"
+        >
+          <path d="m12 2.5 2.95 6 6.62.96-4.79 4.67 1.13 6.59L12 17.62l-5.91 3.1 1.13-6.59-4.79-4.67 6.62-.96L12 2.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+export function AdminControlTower({ metrics, leads, categorySuggestions, reviews, stores, products, logs }: AdminControlTowerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
@@ -259,6 +279,37 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
             </article>
           ))}
           {!categorySuggestions.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem sugestoes pendentes.</p> : null}
+        </div>
+      </section>
+
+      <section className="rounded-[8px] bg-white p-4 shadow-sm">
+        <h2 className="text-xl font-black uppercase text-neutral-950">Moderacao de comentarios</h2>
+        <div className="mt-3 space-y-3">
+          {reviews.map((review) => (
+            <article className="rounded-[8px] border border-neutral-200 p-4" key={review.id}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-base font-black uppercase text-neutral-950">{review.produtos?.nome_produto || "Produto Caruano"}</p>
+                  <p className="mt-1 text-xs font-bold uppercase text-neutral-500">
+                    {review.usuarios?.nome_completo || "Cliente"} | {review.lojistas?.nome_fantasia || "Loja"} | {formatDate(review.criado_em)}
+                  </p>
+                </div>
+                <ReviewStars value={Number(review.nota || 0)} />
+              </div>
+              <p className="mt-3 rounded-[6px] bg-neutral-100 p-3 text-sm font-bold leading-relaxed text-neutral-700">
+                {review.comentario || "Sem comentario."}
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button className="min-h-11 rounded-[6px] bg-[#00a86b] text-sm font-black uppercase text-white" onClick={() => patchAction(`/api/admin/reviews/${review.id}`, { status: "aprovado" }, "Comentario aprovado.")} type="button">
+                  Aprovar
+                </button>
+                <button className="min-h-11 rounded-[6px] bg-red-600 text-sm font-black uppercase text-white" onClick={() => patchAction(`/api/admin/reviews/${review.id}`, { status: "rejeitado" }, "Comentario reprovado.")} type="button">
+                  Reprovar
+                </button>
+              </div>
+            </article>
+          ))}
+          {!reviews.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem comentarios pendentes.</p> : null}
         </div>
       </section>
 

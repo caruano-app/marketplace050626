@@ -3,7 +3,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { MerchantDashboardApp } from "@/components/dashboard/merchant-dashboard-app";
 import { NotificationBell } from "@/components/smart-tools/notification-badge";
 import { TrackableQrCode } from "@/components/qrcode/trackable-qr-code";
-import { getMerchantLeadMetric, getMerchantProducts, getMerchantStoreQr, getPendingQuotes } from "@/lib/data/merchant-dashboard";
+import { getMerchantLeadMetric, getMerchantProducts, getMerchantReviewSummary, getMerchantStoreQr, getPendingQuotes } from "@/lib/data/merchant-dashboard";
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -23,12 +23,32 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function ReviewStars({ value }: { value: number }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <svg
+          aria-hidden="true"
+          className={star <= Math.round(value) ? "fill-[#FFC300] text-[#FFC300]" : "fill-none text-neutral-400"}
+          height="18"
+          key={star}
+          viewBox="0 0 24 24"
+          width="18"
+        >
+          <path d="m12 2.5 2.95 6 6.62.96-4.79 4.67 1.13 6.59L12 17.62l-5.91 3.1 1.13-6.59-4.79-4.67 6.62-.96L12 2.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
 export default async function MerchantDashboardPage() {
-  const [metrics, quotes, products, storeQr] = await Promise.all([
+  const [metrics, quotes, products, storeQr, reviewSummary] = await Promise.all([
     getMerchantLeadMetric(),
     getPendingQuotes(),
     getMerchantProducts(),
     getMerchantStoreQr(),
+    getMerchantReviewSummary(),
   ]);
   const totalSales = quotes.reduce((sum, quote) => sum + Number(quote.valor_proposto || 0), 0);
 
@@ -65,6 +85,39 @@ export default async function MerchantDashboardPage() {
           <div className="min-w-[180px] rounded-[8px] bg-white p-4 shadow-sm">
             <p className="text-xs font-black uppercase text-neutral-500">Leads total</p>
             <p className="mt-2 text-3xl font-black text-neutral-950">{metrics.total}</p>
+          </div>
+          <div className="min-w-[180px] rounded-[8px] bg-white p-4 shadow-sm">
+            <p className="text-xs font-black uppercase text-neutral-500">Nota media</p>
+            <p className="mt-2 text-3xl font-black text-neutral-950">{reviewSummary.averageRating ? reviewSummary.averageRating.toFixed(1) : "-"}</p>
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-[8px] bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black uppercase text-neutral-950">Feedback dos clientes</h2>
+              <p className="mt-1 text-sm font-bold text-neutral-500">{reviewSummary.totalReviews} avaliacoes aprovadas</p>
+            </div>
+            <div className="flex items-center gap-2 rounded-full bg-[#fff8d6] px-4 py-2 text-sm font-black text-neutral-950">
+              <ReviewStars value={reviewSummary.averageRating || 0} />
+              <span>{reviewSummary.averageRating ? reviewSummary.averageRating.toFixed(1) : "Sem nota"}</span>
+            </div>
+          </div>
+          <div className="mt-3 space-y-3">
+            {reviewSummary.latest.map((review) => (
+              <article className="rounded-[8px] border border-neutral-200 p-4" key={review.id}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-black uppercase text-neutral-950">{review.productName}</p>
+                  <ReviewStars value={review.nota} />
+                </div>
+                <p className="mt-2 text-sm font-bold leading-relaxed text-neutral-700">{review.comentario || "Cliente recomendou este produto."}</p>
+              </article>
+            ))}
+            {!reviewSummary.latest.length ? (
+              <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">
+                Ainda nao ha comentarios aprovados.
+              </p>
+            ) : null}
           </div>
         </section>
 

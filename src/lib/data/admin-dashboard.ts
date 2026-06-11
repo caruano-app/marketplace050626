@@ -42,6 +42,23 @@ export type CategorySuggestion = {
   } | null;
 };
 
+export type AdminReview = {
+  id: string;
+  nota: number;
+  comentario: string | null;
+  status: string | null;
+  criado_em: string | null;
+  usuarios?: {
+    nome_completo: string | null;
+  } | null;
+  produtos?: {
+    nome_produto: string | null;
+  } | null;
+  lojistas?: {
+    nome_fantasia: string | null;
+  } | null;
+};
+
 export type AdminMetrics = {
   totalLeads: number;
   todayLeads: number;
@@ -62,7 +79,7 @@ export async function getAdminDashboardData() {
   const supabase = createSupabaseServerClient();
 
   if (!supabase) {
-    return { stores: [], products: [], logs: [], leads: [], categorySuggestions: [], metrics: emptyMetrics, volume: 0 };
+    return { stores: [], products: [], logs: [], leads: [], categorySuggestions: [], reviews: [], metrics: emptyMetrics, volume: 0 };
   }
 
   const today = new Date();
@@ -79,6 +96,7 @@ export async function getAdminDashboardData() {
     todayLeadsResult,
     activeStoresResult,
     productsCountResult,
+    reviewsResult,
   ] = await Promise.all([
     supabase
       .from("lojistas")
@@ -115,6 +133,12 @@ export async function getAdminDashboardData() {
     supabase.from("leads_atendimento").select("id", { count: "exact", head: true }).gte("criado_em", today.toISOString()),
     supabase.from("lojistas").select("id", { count: "exact", head: true }).eq("status_operacao", "ativo"),
     supabase.from("produtos").select("id", { count: "exact", head: true }),
+    supabase
+      .from("avaliacoes_comentarios")
+      .select("id,nota,comentario,status,criado_em,usuarios(nome_completo),produtos(nome_produto),lojistas(nome_fantasia)")
+      .eq("status", "pendente")
+      .order("criado_em", { ascending: false })
+      .limit(20),
   ]);
 
   const volume = (volumeResult.data || []).reduce((sum, item) => sum + Number(item.valor_total_checkout || 0), 0);
@@ -130,6 +154,12 @@ export async function getAdminDashboardData() {
     ...store,
     usuarios: Array.isArray(store.usuarios) ? store.usuarios[0] || null : store.usuarios,
   })) as AdminStore[];
+  const reviews = (reviewsResult.data || []).map((review) => ({
+    ...review,
+    usuarios: Array.isArray(review.usuarios) ? review.usuarios[0] || null : review.usuarios,
+    produtos: Array.isArray(review.produtos) ? review.produtos[0] || null : review.produtos,
+    lojistas: Array.isArray(review.lojistas) ? review.lojistas[0] || null : review.lojistas,
+  })) as AdminReview[];
   const metrics = {
     totalLeads: totalLeadsResult.count || leads.length,
     todayLeads: todayLeadsResult.count || 0,
@@ -144,6 +174,7 @@ export async function getAdminDashboardData() {
     logs: (logsResult.data || []) as AuditLog[],
     leads,
     categorySuggestions,
+    reviews,
     metrics,
     volume,
   };

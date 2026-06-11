@@ -5,7 +5,7 @@ import { VerifiedBadge } from "@/components/common/verified-badge";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductDetailClient } from "@/components/product/product-detail-client";
 import { TrackableQrCode } from "@/components/qrcode/trackable-qr-code";
-import { getProductDetail, type WholesalePriceRule } from "@/lib/data/product-detail";
+import { getProductDetail, type ProductCustomerReview, type WholesalePriceRule } from "@/lib/data/product-detail";
 import { getFeaturedProducts } from "@/lib/data/products";
 import { isIdentityVerified } from "@/lib/data/verification";
 import type { CategoriaResumo, LojistaResumo, ProdutoVitrine, SubcategoriaResumo } from "@/types/database";
@@ -235,6 +235,34 @@ function isPremiumPartner(product: ProdutoVitrine) {
   return false;
 }
 
+function RatingStars({ value, size = 20 }: { value: number; size?: number }) {
+  const rounded = Math.round(value);
+
+  return (
+    <span className="inline-flex items-center gap-1" aria-label={`Nota ${value.toFixed(1)} de 5`}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <svg
+          aria-hidden="true"
+          className={star <= rounded ? "fill-[#FFC300] text-[#FFC300]" : "fill-none text-neutral-400"}
+          height={size}
+          key={star}
+          viewBox="0 0 24 24"
+          width={size}
+        >
+          <path d="m12 2.5 2.95 6 6.62.96-4.79 4.67 1.13 6.59L12 17.62l-5.91 3.1 1.13-6.59-4.79-4.67 6.62-.96L12 2.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+function maskCustomerName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "Cliente Caruano";
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[1].slice(0, 1)}.`;
+}
+
 function TechnicalSpecifications({ product }: { product: ProdutoVitrine }) {
   const rows = flattenSpecifications(product.especificacoes_tecnicas);
 
@@ -288,9 +316,44 @@ function WholesalePriceTable({ pricing, retailPrice, unit }: { pricing: Wholesal
   );
 }
 
+function CustomerReviews({ reviews, average }: { reviews: ProductCustomerReview[]; average: number }) {
+  return (
+    <section className="rounded-[8px] border border-neutral-300 bg-white p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-black uppercase text-[#f58220]">Prova social</p>
+          <h2 className="text-2xl font-black uppercase text-neutral-950">Avaliacoes dos clientes</h2>
+        </div>
+        <div className="flex items-center gap-2 rounded-full bg-[#fff8d6] px-4 py-2 text-sm font-black text-neutral-950">
+          <RatingStars value={average || 0} size={18} />
+          <span>{average ? average.toFixed(1) : "Sem nota"}</span>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {reviews.map((review) => (
+          <article className="rounded-[8px] border border-neutral-200 bg-neutral-50 p-4" key={review.id}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-black uppercase text-neutral-950">{maskCustomerName(review.customerName)}</p>
+              <RatingStars value={review.nota} size={18} />
+            </div>
+            <p className="mt-3 text-sm font-bold leading-relaxed text-neutral-700">{review.comentario || "Cliente recomendou este produto."}</p>
+          </article>
+        ))}
+
+        {!reviews.length ? (
+          <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">
+            Este produto ainda nao possui avaliacoes aprovadas.
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [{ product, variations, wholesalePricing }, relatedProducts] = await Promise.all([
+  const [{ product, variations, wholesalePricing, reviews, reviewAverage }, relatedProducts] = await Promise.all([
     getProductDetail(slug),
     getFeaturedProducts(),
   ]);
@@ -347,7 +410,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <h1 className="text-4xl font-black uppercase leading-tight text-neutral-950">{product.nome_produto}</h1>
             <div className="flex flex-wrap items-center gap-8 text-lg font-bold text-neutral-700">
               <span>SKU {product.codigo_referencia_sku}</span>
-              <span>4.8 *****</span>
+              <span className="flex items-center gap-2">
+                {reviewAverage ? reviewAverage.toFixed(1) : "Sem nota"}
+                <RatingStars value={reviewAverage || 0} />
+              </span>
             </div>
             <div className="flex gap-10 text-base font-bold text-neutral-700">
               <span>Marca: {storeName}</span>
@@ -395,6 +461,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
             <DimensionsAccordion product={product} />
             <TechnicalSpecifications product={product} />
+            <CustomerReviews reviews={reviews} average={reviewAverage} />
           </div>
         </section>
 

@@ -58,6 +58,44 @@ function ParkingMap({ sector }: { sector: string | null | undefined }) {
 export function BuyerCargoApp({ orders, summary }: BuyerCargoAppProps) {
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [mapSector, setMapSector] = useState<string | null>(null);
+  const [reviewOrder, setReviewOrder] = useState<BuyerCargoOrder | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [sendingReview, setSendingReview] = useState(false);
+
+  async function submitReview() {
+    if (!reviewOrder?.reviewTargetProductId) {
+      setReviewMessage("Nao foi possivel identificar o produto deste pedido.");
+      return;
+    }
+
+    setSendingReview(true);
+    setReviewMessage("Enviando avaliacao...");
+
+    const response = await fetch("/api/reviews", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        produtoId: reviewOrder.reviewTargetProductId,
+        lojistaId: reviewOrder.lojistaId,
+        pedidoId: reviewOrder.id,
+        nota: reviewRating,
+        comentario: reviewComment,
+      }),
+    });
+    const payload = (await response.json()) as { error?: string };
+
+    setSendingReview(false);
+
+    if (!response.ok) {
+      setReviewMessage(payload.error || "Nao foi possivel enviar a avaliacao.");
+      return;
+    }
+
+    setReviewMessage("Avaliacao enviada para moderacao. Obrigado pelo feedback.");
+    setReviewComment("");
+  }
 
   return (
     <div className="space-y-4">
@@ -128,6 +166,21 @@ export function BuyerCargoApp({ orders, summary }: BuyerCargoAppProps) {
               >
                 Como chegar na vaga
               </button>
+              {order.status === "enviado" || order.shipment?.proofUrl ? (
+                <button
+                  className="min-h-11 rounded-xl border border-[#FFC300] bg-white px-4 text-sm font-black uppercase text-zinc-900 disabled:opacity-40"
+                  disabled={!order.reviewTargetProductId}
+                  onClick={() => {
+                    setReviewOrder(order);
+                    setReviewRating(5);
+                    setReviewComment("");
+                    setReviewMessage("");
+                  }}
+                  type="button"
+                >
+                  Avaliar compra
+                </button>
+              ) : null}
             </div>
           </article>
         ))}
@@ -158,6 +211,57 @@ export function BuyerCargoApp({ orders, summary }: BuyerCargoAppProps) {
             <button className="mt-4 min-h-11 w-full rounded-xl bg-zinc-900 px-4 text-sm font-black uppercase text-white" onClick={() => setMapSector(null)} type="button">
               Fechar
             </button>
+          </section>
+        </div>
+      ) : null}
+
+      {reviewOrder ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/50">
+          <section className="w-full rounded-t-2xl bg-white p-5 shadow-2xl md:mx-auto md:max-w-xl">
+            <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-neutral-300" />
+            <p className="text-sm font-black uppercase text-[#f58220]">Avaliacao da compra</p>
+            <h2 className="mt-1 text-2xl font-black uppercase text-zinc-900">{reviewOrder.storeName}</h2>
+            <p className="mt-1 text-sm font-bold text-neutral-600">{reviewOrder.reviewTargetProductName || "Produto Caruano"}</p>
+
+            <div className="mt-5">
+              <p className="text-sm font-black uppercase text-zinc-900">Sua nota</p>
+              <div className="mt-2 flex gap-2">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    aria-label={`Dar nota ${value}`}
+                    className="grid h-12 w-12 place-items-center rounded-xl bg-neutral-100 transition active:scale-95"
+                    key={value}
+                    onClick={() => setReviewRating(value)}
+                    type="button"
+                  >
+                    <svg aria-hidden="true" className={value <= reviewRating ? "fill-[#FFC300] text-[#FFC300]" : "fill-none text-neutral-400"} height="28" viewBox="0 0 24 24" width="28">
+                      <path d="m12 2.5 2.95 6 6.62.96-4.79 4.67 1.13 6.59L12 17.62l-5.91 3.1 1.13-6.59-4.79-4.67 6.62-.96L12 2.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="mt-5 block text-sm font-black uppercase text-zinc-900">
+              Comentario
+              <textarea
+                className="mt-2 min-h-28 w-full rounded-xl border border-neutral-300 p-3 text-base font-bold normal-case outline-none focus:border-zinc-900"
+                onChange={(event) => setReviewComment(event.target.value)}
+                placeholder="Conte como foi o atendimento, produto e entrega."
+                value={reviewComment}
+              />
+            </label>
+
+            {reviewMessage ? <p className="mt-3 rounded-xl bg-[#fff8d6] p-3 text-sm font-black text-zinc-900">{reviewMessage}</p> : null}
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <button className="min-h-11 rounded-xl bg-[#FFC300] px-4 text-sm font-black uppercase text-zinc-900 disabled:opacity-50" disabled={sendingReview} onClick={submitReview} type="button">
+                {sendingReview ? "Enviando..." : "Enviar avaliacao"}
+              </button>
+              <button className="min-h-11 rounded-xl bg-zinc-900 px-4 text-sm font-black uppercase text-white" onClick={() => setReviewOrder(null)} type="button">
+                Fechar
+              </button>
+            </div>
           </section>
         </div>
       ) : null}

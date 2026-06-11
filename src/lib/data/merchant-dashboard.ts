@@ -26,6 +26,21 @@ export type MerchantStoreQr = {
   slug: string;
 };
 
+export type MerchantReviewItem = {
+  id: string;
+  nota: number;
+  comentario: string | null;
+  criado_em: string | null;
+  productName: string;
+  customerName: string;
+};
+
+export type MerchantReviewSummary = {
+  averageRating: number;
+  totalReviews: number;
+  latest: MerchantReviewItem[];
+};
+
 export async function getMerchantLeadMetric(): Promise<MerchantLeadMetric> {
   const supabase = createSupabaseServerClient();
 
@@ -110,4 +125,55 @@ export async function getMerchantStoreQr(): Promise<MerchantStoreQr> {
   }
 
   return data as MerchantStoreQr;
+}
+
+export async function getMerchantReviewSummary(): Promise<MerchantReviewSummary> {
+  const supabase = createSupabaseServerClient();
+
+  if (!supabase) {
+    return { averageRating: 0, totalReviews: 0, latest: [] };
+  }
+
+  const { data: store } = await supabase
+    .from("lojistas")
+    .select("id")
+    .order("criado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!store?.id) {
+    return { averageRating: 0, totalReviews: 0, latest: [] };
+  }
+
+  const { data, error } = await supabase
+    .from("avaliacoes_comentarios")
+    .select("id,nota,comentario,criado_em,produtos(nome_produto),usuarios(nome_completo)")
+    .eq("lojista_id", store.id)
+    .eq("status", "aprovado")
+    .order("criado_em", { ascending: false })
+    .limit(30);
+
+  if (error || !data) {
+    return { averageRating: 0, totalReviews: 0, latest: [] };
+  }
+
+  const reviews = data.map((review) => {
+    const product = Array.isArray(review.produtos) ? review.produtos[0] || null : review.produtos;
+    const user = Array.isArray(review.usuarios) ? review.usuarios[0] || null : review.usuarios;
+
+    return {
+      id: String(review.id),
+      nota: Number(review.nota || 0),
+      comentario: review.comentario || null,
+      criado_em: review.criado_em || null,
+      productName: product?.nome_produto || "Produto Caruano",
+      customerName: user?.nome_completo || "Cliente Caruano",
+    };
+  });
+
+  return {
+    averageRating: reviews.length ? reviews.reduce((sum, review) => sum + review.nota, 0) / reviews.length : 0,
+    totalReviews: reviews.length,
+    latest: reviews.slice(0, 3),
+  };
 }

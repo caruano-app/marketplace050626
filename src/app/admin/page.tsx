@@ -6,7 +6,7 @@ import { getAdminDashboardData } from "@/lib/data/admin-dashboard";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const { metrics, leads, categorySuggestions, stores, products, logs } = await getAdminDashboardData();
+  const { metrics, leads, categorySuggestions, reviews, stores, products, logs } = await getAdminDashboardData();
 
   return (
     <div className="min-h-screen bg-neutral-100">
@@ -18,6 +18,7 @@ export default async function AdminPage() {
           logs={logs}
           metrics={metrics}
           products={products}
+          reviews={reviews}
           stores={stores}
         />
       </main>
