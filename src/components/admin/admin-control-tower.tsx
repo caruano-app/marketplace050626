@@ -6,6 +6,8 @@ import type { AdminMetrics, AdminProduct, AdminStore, AuditLog, CategorySuggesti
 import { documentLabels, type SignedIdentityDocument } from "@/lib/data/kyc";
 import type { AtendimentoLead } from "@/lib/data/leads";
 import { NotificationBell } from "@/components/smart-tools/notification-badge";
+import { VerifiedBadge } from "@/components/common/verified-badge";
+import { isIdentityVerified } from "@/lib/data/verification";
 
 type AdminControlTowerProps = {
   metrics: AdminMetrics;
@@ -270,6 +272,10 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, stores,
                 <p className="text-xs font-bold text-neutral-500">
                   {store.status_operacao} | KYC {store.usuarios?.status_verificacao_identidade || "nao_enviado"}
                 </p>
+                <div className="mt-2 flex min-h-11 items-center justify-between rounded-[6px] bg-neutral-100 px-3 text-xs font-black uppercase text-neutral-700">
+                  <span>Selo</span>
+                  {isIdentityVerified(store.usuarios) ? <VerifiedBadge size="sm" label /> : <span>Sem selo</span>}
+                </div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
                   <button className="min-h-11 rounded-[6px] bg-[#ffd700] text-sm font-black uppercase text-neutral-950" onClick={() => loadIdentityDocuments(store)} type="button">
                     Ver documentos

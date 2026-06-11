@@ -1,11 +1,13 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/header/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { VerifiedBadge } from "@/components/common/verified-badge";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductDetailClient } from "@/components/product/product-detail-client";
 import { TrackableQrCode } from "@/components/qrcode/trackable-qr-code";
 import { getProductDetail, type WholesalePriceRule } from "@/lib/data/product-detail";
 import { getFeaturedProducts } from "@/lib/data/products";
+import { isIdentityVerified } from "@/lib/data/verification";
 import type { CategoriaResumo, LojistaResumo, ProdutoVitrine, SubcategoriaResumo } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +36,7 @@ function getStoreSlug(product: ProdutoVitrine) {
 }
 
 function isProductStoreVerified(product: ProdutoVitrine) {
-  const users = asSingle<LojistaResumo>(product.lojistas)?.usuarios;
-  const user = Array.isArray(users) ? users[0] : users;
-  return user?.status_verificacao_identidade === "aprovado";
+  return isIdentityVerified(asSingle<LojistaResumo>(product.lojistas)?.usuarios);
 }
 
 function getSubcategory(product: ProdutoVitrine) {
@@ -362,10 +362,16 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               </p>
               <a className="mt-3 inline-flex min-h-11 flex-wrap items-center gap-2 rounded-[8px] border border-[#f6b900] bg-[#fff8d6] px-4 text-sm font-black uppercase text-neutral-950" href={`/loja/${storeSlug}`}>
                 <span>Vendido e entregue por: {product.vendido_e_entregue_por || storeName}</span>
+                {isProductStoreVerified(product) ? <VerifiedBadge size="lg" label /> : null}
                 {premiumPartner ? (
-                  <span className="rounded-full bg-neutral-950 px-2 py-1 text-[11px] text-[#FFD700]">Verificado</span>
+                  <span className="rounded-full bg-neutral-950 px-2 py-1 text-[11px] text-[#FFD700]">Premium</span>
                 ) : null}
               </a>
+              {isProductStoreVerified(product) ? (
+                <p className="mt-2 text-sm font-bold text-neutral-700">
+                  Compre com seguranca: Este vendedor passou por nossa auditoria de documentos.
+                </p>
+              ) : null}
             </div>
 
             <p className="max-w-[600px] text-xl leading-relaxed text-neutral-700">
@@ -408,6 +414,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             ))}
           </div>
         </section>
+
+        {isProductStoreVerified(product) ? (
+          <section className="mt-6 rounded-[8px] border border-[#FFC300] bg-[#fff8d6] p-4 text-sm font-bold leading-relaxed text-zinc-900">
+            <span className="mr-2 inline-grid h-7 w-7 place-items-center rounded-full bg-[#FFC300] text-base font-black text-zinc-900">!</span>
+            <strong>Garantia Caruano:</strong> Este lojista e verificado. Se houver qualquer problema com a entrega na excursao, nossa equipe de suporte intervem por voce.
+          </section>
+        ) : null}
       </main>
 
       <SiteFooter />

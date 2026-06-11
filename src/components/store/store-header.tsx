@@ -1,10 +1,14 @@
 import type { LojistaPerfil } from "@/types/database";
+import { VerifiedBadge } from "@/components/common/verified-badge";
+import { isIdentityVerified } from "@/lib/data/verification";
 
 type StoreHeaderProps = {
   store: LojistaPerfil;
 };
 
 export function StoreHeader({ store }: StoreHeaderProps) {
+  const verified = isIdentityVerified(store.usuarios);
+
   return (
     <section className="grid gap-4 md:grid-cols-[340px_1fr]">
       <div className="grid h-[215px] place-items-center border border-neutral-300 bg-neutral-200 text-center">
@@ -15,8 +19,9 @@ export function StoreHeader({ store }: StoreHeaderProps) {
         </div>
       </div>
       <div className="border border-neutral-300 bg-neutral-100 p-6">
-        <h1 className="border-b border-neutral-400 pb-3 text-center text-2xl font-black uppercase text-neutral-950">
-          {store.nome_fantasia} | ID
+        <h1 className="flex flex-wrap items-center justify-center gap-2 border-b border-neutral-400 pb-3 text-center text-2xl font-black uppercase text-neutral-950">
+          <span>{store.nome_fantasia} | ID</span>
+          {verified ? <VerifiedBadge size="lg" label /> : null}
         </h1>
         <div className="mt-5 space-y-2 text-base font-bold text-neutral-700">
           <p>Endereco(s): Polo de Confeccoes do Agreste</p>

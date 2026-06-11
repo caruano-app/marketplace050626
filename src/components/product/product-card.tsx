@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
+import { VerifiedBadge } from "@/components/common/verified-badge";
+import { isIdentityVerified } from "@/lib/data/verification";
 import type { LojistaResumo, ProdutoVitrine } from "@/types/database";
 
 type ProductCardProps = {
@@ -18,6 +20,11 @@ function getStoreName(store: ProdutoVitrine["lojistas"]) {
   return (store as LojistaResumo).nome_fantasia;
 }
 
+function getStore(store: ProdutoVitrine["lojistas"]) {
+  if (!store) return null;
+  return Array.isArray(store) ? store[0] || null : (store as LojistaResumo);
+}
+
 function formatPrice(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -28,6 +35,8 @@ function formatPrice(value: number) {
 export function ProductCard({ product }: ProductCardProps) {
   const imageUrl = product.imagens_url?.[0];
   const description = product.descricao_completa || "Produto disponivel no catalogo Caruano.";
+  const store = getStore(product.lojistas);
+  const verified = isIdentityVerified(store?.usuarios);
 
   return (
     <article className="flex h-[360px] w-full min-w-0 flex-col overflow-hidden rounded-[6px] border border-neutral-300 bg-white shadow-sm md:h-[420px]">
@@ -54,8 +63,9 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col px-3 py-2">
-        <p className="text-[9px] font-black uppercase text-neutral-600 md:text-[10px]">
-          Vendido e entregue por {product.vendido_e_entregue_por || getStoreName(product.lojistas)}
+        <p className="flex items-center gap-1 text-[9px] font-black uppercase text-neutral-600 md:text-[10px]">
+          <span className="line-clamp-1">Vendido e entregue por {product.vendido_e_entregue_por || getStoreName(product.lojistas)}</span>
+          {verified ? <VerifiedBadge size="sm" /> : null}
         </p>
         <h3 className="line-clamp-1 text-[13px] font-black uppercase leading-tight text-neutral-950 md:text-[15px]">
           {product.nome_produto}
