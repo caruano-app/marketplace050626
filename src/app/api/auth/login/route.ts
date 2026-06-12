@@ -10,6 +10,13 @@ type AuthRequest = {
   captchaToken?: string;
 };
 
+type UserProfileRoute = {
+  id: string;
+  perfil_principal: string | null;
+  is_admin: boolean | null;
+  status_verificacao_identidade: string | null;
+};
+
 type AttemptState = {
   count: number;
   resetAt: number;
@@ -69,6 +76,30 @@ function saveSessionCookie(response: NextResponse, accessToken: string) {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+}
+
+function getProfileRedirect(profile: UserProfileRoute | null, fallbackProfile?: string) {
+  const role = profile?.perfil_principal || fallbackProfile || "comprador";
+
+  if (profile?.is_admin) {
+    return "/admin";
+  }
+
+  if (role === "lojista") {
+    return profile?.status_verificacao_identidade === "aprovado" ? "/dashboard/lojista" : "/dashboard/verificacao";
+  }
+
+  if (role === "entregador") {
+    return profile?.status_verificacao_identidade === "aprovado"
+      ? "/dashboard/entregador"
+      : "/dashboard/entregador/verificacao";
+  }
+
+  if (role === "cliente" || role === "comprador") {
+    return "/dashboard/comprador";
+  }
+
+  return "/dashboard/perfil-premiado";
 }
 
 export async function POST(request: NextRequest) {
@@ -139,8 +170,34 @@ export async function POST(request: NextRequest) {
 
   clearAttempts(rateKey);
 
+  let redirectTo = getProfileRedirect(null, body.profile);
+
+  if (result.data.session?.access_token && result.data.user?.id) {
+    const authenticatedSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${result.data.session.access_token}`,
+        },
+      },
+    });
+
+    const { data: profile } = await authenticatedSupabase
+      .from("usuarios")
+      .select("id,perfil_principal,is_admin,status_verificacao_identidade")
+      .eq("id", result.data.user.id)
+      .maybeSingle<UserProfileRoute>();
+
+    const metadataProfile = result.data.user.user_metadata?.perfil_principal;
+    redirectTo = getProfileRedirect(profile, typeof metadataProfile === "string" ? metadataProfile : body.profile);
+  }
+
   const response = NextResponse.json({
     ok: true,
+    redirectTo,
     needsEmailConfirmation: !result.data.session,
   });
 

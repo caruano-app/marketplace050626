@@ -40,7 +40,8 @@ export function LoginForm() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [turnstileReady, setTurnstileReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const nextUrl = searchParams.get("next") || "/";
+  const explicitNextUrl = searchParams.get("next");
+  const nextUrl = explicitNextUrl || "/";
   const captchaEnabled = Boolean(turnstileSiteKey);
 
   const resetCaptcha = useCallback(() => {
@@ -89,7 +90,12 @@ export function LoginForm() {
         captchaToken,
       }),
     });
-    const payload = (await response.json()) as { ok?: boolean; error?: string; needsEmailConfirmation?: boolean };
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      error?: string;
+      redirectTo?: string;
+      needsEmailConfirmation?: boolean;
+    };
 
     if (!response.ok || payload.error) {
       setStatus(payload.error || "Nao foi possivel autenticar agora.");
@@ -99,7 +105,7 @@ export function LoginForm() {
     }
 
     if (!payload.needsEmailConfirmation) {
-      window.location.href = nextUrl;
+      window.location.href = explicitNextUrl || payload.redirectTo || nextUrl;
       return;
     }
 
