@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
+import { isCaruanoAdmin } from "@/lib/auth/admin";
 import { createSupabaseRequestClient } from "@/lib/auth/session";
+import { createSupabaseProfileClient, getProfileForUser } from "@/lib/auth/profile";
 
 function getTokenFromCookieStore(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   const appCookie = cookieStore.get("caruano_session_access_token")?.value;
@@ -38,18 +40,16 @@ export async function getServerSessionClient() {
     return null;
   }
 
-  const { data: profile } = await supabase
-    .from("usuarios")
-    .select("id,perfil_principal,is_admin,status_verificacao_identidade")
-    .eq("id", authData.user.id)
-    .maybeSingle();
+  const { profile } = await getProfileForUser(authData.user, token);
 
   if (!profile) {
     return null;
   }
 
+  const adminClient = isCaruanoAdmin(profile) ? createSupabaseProfileClient(token) : null;
+
   return {
-    supabase,
+    supabase: adminClient || supabase,
     user: authData.user,
     profile,
   };

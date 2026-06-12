@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import { isCaruanoAdmin } from "@/lib/auth/admin";
+import { createSupabaseProfileClient, getProfileForUser } from "@/lib/auth/profile";
 
 export function getSessionToken(request: NextRequest) {
   const appCookie = request.cookies.get("caruano_session_access_token")?.value;
@@ -193,18 +194,16 @@ export async function getAuthenticatedAdmin(request: NextRequest) {
     return { error: "Sessao invalida.", status: 401 as const };
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("usuarios")
-    .select("id,perfil_principal,is_admin")
-    .eq("id", authData.user.id)
-    .maybeSingle();
+  const { profile } = await getProfileForUser(authData.user, token);
 
-  if (profileError || !profile || !isCaruanoAdmin(profile)) {
+  if (!profile || !isCaruanoAdmin(profile)) {
     return { error: "Acesso restrito ao Admin Caruano.", status: 403 as const };
   }
 
+  const adminSupabase = createSupabaseProfileClient(token) || supabase;
+
   return {
-    supabase,
+    supabase: adminSupabase,
     user: authData.user,
     profile,
   };

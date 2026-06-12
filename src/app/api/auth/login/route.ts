@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { isCaruanoAdmin } from "@/lib/auth/admin";
+import { getProfileForUser } from "@/lib/auth/profile";
 
 type AuthRequest = {
   mode: "login" | "cadastro";
@@ -174,26 +175,8 @@ export async function POST(request: NextRequest) {
   let redirectTo = getProfileRedirect(null, body.profile);
 
   if (result.data.session?.access_token && result.data.user?.id) {
-    const authenticatedSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-      global: {
-        headers: {
-          Authorization: `Bearer ${result.data.session.access_token}`,
-        },
-      },
-    });
-
-    const { data: profile } = await authenticatedSupabase
-      .from("usuarios")
-      .select("id,perfil_principal,is_admin,status_verificacao_identidade")
-      .eq("id", result.data.user.id)
-      .maybeSingle<UserProfileRoute>();
-
-    const metadataProfile = result.data.user.user_metadata?.perfil_principal;
-    redirectTo = getProfileRedirect(profile, typeof metadataProfile === "string" ? metadataProfile : body.profile);
+    const { profile } = await getProfileForUser(result.data.user, result.data.session.access_token);
+    redirectTo = getProfileRedirect(profile as UserProfileRoute, body.profile);
   }
 
   const response = NextResponse.json({

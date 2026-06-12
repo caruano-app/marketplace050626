@@ -1,11 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { isCaruanoAdmin } from "@/lib/auth/admin";
-
-type UserProfile = {
-  perfil_principal: string | null;
-  is_admin: boolean | null;
-};
+import { getProfileForUser } from "@/lib/auth/profile";
 
 const protectedMatchers = [
   "/admin",
@@ -100,19 +96,20 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("usuarios")
-    .select("perfil_principal,is_admin")
-    .eq("id", authData.user.id)
-    .maybeSingle();
+  const profileResult = await getProfileForUser(authData.user, token);
+  const userProfile = profileResult.profile;
 
-  if (profileError || !profile) {
-    const response = redirectToLogin(request);
-    if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
-    return response;
+  if (process.env.DEBUG_ADMIN_MIDDLEWARE === "true" && (pathname === "/admin" || pathname.startsWith("/admin/"))) {
+    console.log("[caruano-admin-middleware]", {
+      path: pathname,
+      userId: authData.user.id,
+      email: authData.user.email,
+      profile: userProfile,
+      profileError: profileResult.error,
+      usedFallback: profileResult.usedFallback,
+      usedServiceRole: profileResult.usedServiceRole,
+    });
   }
-
-  const userProfile = profile as UserProfile;
 
   if ((pathname === "/admin" || pathname.startsWith("/admin/")) && !isCaruanoAdmin(userProfile)) {
     const response = redirectToLogin(request);
