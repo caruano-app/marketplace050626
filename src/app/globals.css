@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #ffc300;
+  --primary-foreground: #171717;
 }
 
 @theme inline {
@@ -20,9 +22,16 @@ body {
 html,
 body {
   min-height: 100%;
-  overflow-x: clip;
-  overflow-y: auto;
   overscroll-behavior-y: auto;
+}
+
+html {
+  overflow-y: scroll;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: clip;
 }
 
 * {
