@@ -6,9 +6,12 @@ export type CategoriaMestre = {
 };
 
 export type LojistaResumo = {
+  id?: string;
   nome_fantasia: string;
   slug: string;
   parceiro_premium?: boolean | null;
+  is_partner?: boolean | null;
+  partner_level?: string | null;
   usuarios?: {
     status_verificacao_identidade: string | null;
   } | Array<{ status_verificacao_identidade: string | null }> | null;
@@ -26,6 +29,8 @@ export type LojistaPerfil = {
   valor_comissao_plataforma: number;
   status_operacao: string | null;
   status_funcionamento: string | null;
+  is_partner?: boolean | null;
+  partner_level?: string | null;
   usuarios?: {
     status_verificacao_identidade: string | null;
   } | Array<{ status_verificacao_identidade: string | null }> | null;

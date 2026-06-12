@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { PartnerBadge } from "@/components/common/partner-badge";
 import { useAffiliateStore } from "@/lib/affiliate/affiliate-store";
 import { useCartStore } from "@/lib/cart/cart-store";
 import { makeLeadId, persistLeadEvent, updateLocalLeadEventStatus } from "@/lib/leads/lead-events";
@@ -289,8 +290,9 @@ export function CheckoutClient() {
               <div>
                 <h3 className="text-2xl font-black uppercase text-neutral-950">{item.name}</h3>
                 <p className="mt-1 text-base text-neutral-600">SKU {item.sku}</p>
-                <p className="mt-1 inline-block rounded-[4px] bg-[#fff8d6] px-2 py-1 text-xs font-black uppercase text-neutral-800">
-                  Vendido por {item.storeName}
+                <p className="mt-1 inline-flex max-w-full items-center gap-1 rounded-[4px] bg-[#fff8d6] px-2 py-1 text-xs font-black uppercase text-neutral-800">
+                  <span className="truncate">Vendido por {item.storeName}</span>
+                  {item.storeIsPartner ? <PartnerBadge level={item.storePartnerLevel} size="sm" /> : null}
                 </p>
                 <p className="mt-1 text-base text-neutral-700">{formatPrice(item.unitPrice)} cada</p>
                 <div className="mt-2 flex gap-2 text-base">

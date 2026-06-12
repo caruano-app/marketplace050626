@@ -13,6 +13,8 @@ const fallbackStore: LojistaPerfil = {
   valor_comissao_plataforma: 10,
   status_operacao: "aprovado_ativo",
   status_funcionamento: "aberto",
+  is_partner: false,
+  partner_level: "standard",
   usuarios: {
     status_verificacao_identidade: "aprovado",
   },
@@ -31,6 +33,8 @@ const fallbackStoreProducts: ProdutoVitrine[] = Array.from({ length: 5 }, (_, in
   lojistas: {
     nome_fantasia: fallbackStore.nome_fantasia,
     slug: fallbackStore.slug,
+    is_partner: false,
+    partner_level: "standard",
   },
 }));
 
@@ -50,7 +54,7 @@ export async function getStoreProfile(slug: string): Promise<{
   const { data: store, error } = await supabase
     .from("lojistas")
     .select(
-      "id,usuario_id,nome_fantasia,slug,segmento,modalidade_coleta,valor_parametro_coleta,forma_comissionamento,valor_comissao_plataforma,status_operacao,status_funcionamento,valor_minimo_pedido_atacado,criado_em,usuarios(status_verificacao_identidade)",
+      "id,usuario_id,nome_fantasia,slug,segmento,modalidade_coleta,valor_parametro_coleta,forma_comissionamento,valor_comissao_plataforma,status_operacao,status_funcionamento,is_partner,partner_level,valor_minimo_pedido_atacado,criado_em,usuarios(status_verificacao_identidade)",
     )
     .eq("slug", slug)
     .single();
@@ -79,7 +83,7 @@ export async function getStoreProfile(slug: string): Promise<{
   const { data: products, error: productsError } = await supabase
     .from("produtos")
     .select(
-      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug,usuarios(status_verificacao_identidade))",
+      "id,lojista_id,subcategoria_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(id,nome_fantasia,slug,is_partner,partner_level,usuarios(status_verificacao_identidade))",
     )
     .eq("lojista_id", store.id)
     .order("criado_em", { ascending: false })

@@ -21,6 +21,14 @@ function storeName(product: ProdutoVitrine) {
   return store?.nome_fantasia || "Loja Caruano";
 }
 
+function storePartner(product: ProdutoVitrine) {
+  const store = Array.isArray(product.lojistas) ? product.lojistas[0] : product.lojistas;
+  return {
+    isPartner: Boolean(store?.is_partner),
+    level: store?.partner_level || null,
+  };
+}
+
 function categoryName(product: ProdutoVitrine) {
   const specs = product.especificacoes_tecnicas as { categoria_nome?: string; categoria_mestre_id?: number } | null | undefined;
   const subcategory = Array.isArray(product.subcategorias_mestre) ? product.subcategorias_mestre[0] : product.subcategorias_mestre;
@@ -53,6 +61,7 @@ export function AddToCartButton({
   children = "Carrinho",
 }: AddToCartButtonProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const partner = storePartner(product);
 
   return (
     <button
@@ -62,6 +71,8 @@ export function AddToCartButton({
           productId: product.id,
           lojistaId: product.lojista_id || "lojista-pendente",
           storeName: storeName(product),
+          storeIsPartner: partner.isPartner,
+          storePartnerLevel: partner.level,
           name: product.nome_produto,
           sku: product.codigo_referencia_sku,
           imageUrl: product.imagens_url?.[0] || null,

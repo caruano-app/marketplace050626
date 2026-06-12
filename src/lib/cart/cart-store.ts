@@ -8,6 +8,8 @@ export type CartItem = {
   productId: string;
   lojistaId: string;
   storeName: string;
+  storeIsPartner?: boolean;
+  storePartnerLevel?: string | null;
   name: string;
   sku: string;
   imageUrl: string | null;

@@ -8,6 +8,7 @@ import { isStockBelowMinimum } from "@/lib/data/managed-stock";
 import { documentLabels, type SignedIdentityDocument } from "@/lib/data/kyc";
 import type { AtendimentoLead } from "@/lib/data/leads";
 import { NotificationBell } from "@/components/smart-tools/notification-badge";
+import { PartnerBadge } from "@/components/common/partner-badge";
 import { VerifiedBadge } from "@/components/common/verified-badge";
 import { isIdentityVerified } from "@/lib/data/verification";
 
@@ -18,6 +19,7 @@ type AdminControlTowerProps = {
   reviews: AdminReview[];
   drivers: AdminDriver[];
   stores: AdminStore[];
+  partnerStores: AdminStore[];
   products: AdminProduct[];
   logs: AuditLog[];
   ecosystem: AdminEcosystemData;
@@ -76,7 +78,7 @@ function ReviewStars({ value }: { value: number }) {
   );
 }
 
-export function AdminControlTower({ metrics, leads, categorySuggestions, reviews, drivers, stores, products, logs, ecosystem }: AdminControlTowerProps) {
+export function AdminControlTower({ metrics, leads, categorySuggestions, reviews, drivers, stores, partnerStores, products, logs, ecosystem }: AdminControlTowerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
@@ -115,6 +117,23 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, reviews
     }
 
     refresh(successMessage);
+  }
+
+  async function updatePartnerStatus(storeId: string, isPartner: boolean, partnerLevel = "standard") {
+    setMessage("Atualizando parceiro oficial...");
+    const response = await fetch(`/api/admin/stores/${storeId}/partner`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_partner: isPartner, partner_level: partnerLevel }),
+    });
+    const payload = (await response.json()) as { error?: string };
+
+    if (!response.ok) {
+      setMessage(payload.error || "Nao foi possivel atualizar o parceiro.");
+      return;
+    }
+
+    refresh(isPartner ? "Parceiro oficial ativado." : "Parceiro oficial desativado.");
   }
 
   async function loadIdentityDocuments(subject: IdentitySubject) {
@@ -288,6 +307,55 @@ export function AdminControlTower({ metrics, leads, categorySuggestions, reviews
             </article>
           ))}
           {!categorySuggestions.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Sem sugestoes pendentes.</p> : null}
+        </div>
+      </section>
+
+      <section className="rounded-[8px] bg-white p-4 shadow-sm" id="parceiros-oficiais">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-black uppercase text-neutral-950">Parceiros oficiais</h2>
+            <p className="mt-1 text-sm font-bold text-neutral-600">Ative o selo Partner Store para lojistas estratégicos.</p>
+          </div>
+          <PartnerBadge label size="md" />
+        </div>
+        <div className="mt-3 space-y-3">
+          {isPending ? <SkeletonRows /> : null}
+          {!isPending && partnerStores.map((store) => (
+            <article className="rounded-[8px] border border-neutral-200 p-4" key={store.id}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="flex min-w-0 items-center gap-2 font-black uppercase text-neutral-950">
+                    <span className="truncate">{store.nome_fantasia}</span>
+                    {store.is_partner ? <PartnerBadge level={store.partner_level} size="sm" /> : null}
+                  </p>
+                  <p className="mt-1 text-xs font-bold uppercase text-neutral-500">
+                    {store.status_operacao || "sem status"} | /loja/{store.slug}
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-black uppercase ${store.is_partner ? "bg-[#fff8d6] text-neutral-950" : "bg-neutral-100 text-neutral-600"}`}>
+                  {store.is_partner ? "Parceiro ativo" : "Parceiro inativo"}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_130px_130px]">
+                <select
+                  className="min-h-11 rounded-[6px] border border-neutral-300 bg-white px-3 text-sm font-black uppercase text-neutral-950"
+                  defaultValue={store.partner_level || "standard"}
+                  onChange={(event) => updatePartnerStatus(store.id, Boolean(store.is_partner), event.target.value)}
+                >
+                  <option value="standard">Standard</option>
+                  <option value="silver">Silver</option>
+                  <option value="gold">Gold</option>
+                </select>
+                <button className="min-h-11 rounded-[6px] bg-[#f6b900] px-3 text-sm font-black uppercase text-neutral-950" onClick={() => updatePartnerStatus(store.id, true, store.partner_level || "standard")} type="button">
+                  Ativar
+                </button>
+                <button className="min-h-11 rounded-[6px] bg-neutral-950 px-3 text-sm font-black uppercase text-white" onClick={() => updatePartnerStatus(store.id, false, store.partner_level || "standard")} type="button">
+                  Desativar
+                </button>
+              </div>
+            </article>
+          ))}
+          {!isPending && !partnerStores.length ? <p className="rounded-[8px] border border-dashed border-neutral-300 p-5 text-center text-sm font-black uppercase text-neutral-500">Nenhum lojista encontrado.</p> : null}
         </div>
       </section>
 

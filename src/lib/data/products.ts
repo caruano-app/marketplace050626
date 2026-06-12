@@ -11,6 +11,8 @@ const fallbackProducts: ProdutoVitrine[] = Array.from({ length: 5 }, (_, index) 
   lojistas: {
     nome_fantasia: "Loja Caruano",
     slug: "loja-caruano",
+    is_partner: false,
+    partner_level: "standard",
   },
 }));
 
@@ -32,7 +34,7 @@ export async function getFeaturedProducts(): Promise<ProdutoVitrine[]> {
   const { data, error } = await supabase
     .from("produtos")
     .select(
-      "id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug,usuarios(status_verificacao_identidade))",
+      "id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(id,nome_fantasia,slug,is_partner,partner_level,usuarios(status_verificacao_identidade))",
     )
     .order("criado_em", { ascending: false })
     .limit(25);
@@ -55,7 +57,7 @@ export async function getDailyOfferProducts(): Promise<ProdutoVitrine[]> {
   const { data, error } = await supabase
     .from("produtos")
     .select(
-      "id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(nome_fantasia,slug,usuarios(status_verificacao_identidade))",
+      "id,lojista_id,codigo_referencia_sku,nome_produto,descricao_completa,preco_base_varejo,unidade_medida,especificacoes_tecnicas,vendido_e_entregue_por,permite_exportacao,imagens_url,lojistas(id,nome_fantasia,slug,is_partner,partner_level,usuarios(status_verificacao_identidade))",
     )
     .order("preco_base_varejo", { ascending: true })
     .limit(25);

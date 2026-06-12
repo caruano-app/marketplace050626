@@ -21,6 +21,7 @@ const groups = [
     label: "Ecossistema",
     items: [
       { label: "Lojistas", href: "/admin#lojistas", icon: "M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 21a6 6 0 0 1 12 0H2Zm12.5 0a5 5 0 0 0-2-4h7a4 4 0 0 1 4 4h-9Z" },
+      { label: "Parceiros Oficiais", href: "/admin#parceiros-oficiais", icon: "M12 3 14.6 8.3 20.5 9.2 16.2 13.4 17.2 19.3 12 16.5 6.8 19.3 7.8 13.4 3.5 9.2 9.4 8.3 12 3Z" },
       { label: "Entregadores", href: "/admin#entregadores", icon: "M3 7h11v9H3V7Zm11 3h4l3 3v3h-7v-6ZM6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm12 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" },
       { label: "KYC", href: "/admin#kyc", icon: "M12 2 4 5v6c0 5 3.4 9.2 8 11 4.6-1.8 8-6 8-11V5l-8-3Zm-3 10 2 2 4-5" },
     ],

@@ -22,7 +22,7 @@ const AdminControlTower = nextDynamic(() => import("@/components/admin/admin-con
 });
 
 export default async function AdminPage() {
-  const { metrics, leads, categorySuggestions, reviews, stores, drivers, products, logs, ecosystem } = await getAdminDashboardData();
+  const { metrics, leads, categorySuggestions, reviews, stores, partnerStores, drivers, products, logs, ecosystem } = await getAdminDashboardData();
   const appearance = await getAdminAppearanceConfig();
   const catalog = await getAdminCatalogData();
 
@@ -44,6 +44,7 @@ export default async function AdminPage() {
             drivers={drivers}
             ecosystem={ecosystem}
             stores={stores}
+            partnerStores={partnerStores}
           />
         </main>
       </AdminMasterShell>

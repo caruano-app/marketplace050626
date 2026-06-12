@@ -11,6 +11,8 @@ export type AdminStore = {
   nome_fantasia: string;
   slug: string;
   status_operacao: string | null;
+  is_partner?: boolean | null;
+  partner_level?: string | null;
   criado_em: string | null;
   usuarios?: {
     status_verificacao_identidade: string | null;
@@ -100,6 +102,7 @@ export async function getAdminDashboardData() {
   if (!supabase) {
     return {
       stores: [],
+      partnerStores: [],
       drivers: [],
       products: [],
       logs: [],
@@ -117,6 +120,7 @@ export async function getAdminDashboardData() {
 
   const [
     storesResult,
+    partnerStoresResult,
     productsResult,
     logsResult,
     volumeResult,
@@ -135,10 +139,15 @@ export async function getAdminDashboardData() {
   ] = await Promise.all([
     supabase
       .from("lojistas")
-      .select("id,usuario_id,nome_fantasia,slug,status_operacao,criado_em,usuarios(status_verificacao_identidade)")
+      .select("id,usuario_id,nome_fantasia,slug,status_operacao,is_partner,partner_level,criado_em,usuarios(status_verificacao_identidade)")
       .eq("status_operacao", "analise_documental")
       .order("criado_em", { ascending: false })
       .limit(10),
+    supabase
+      .from("lojistas")
+      .select("id,usuario_id,nome_fantasia,slug,status_operacao,is_partner,partner_level,criado_em,usuarios(status_verificacao_identidade)")
+      .order("nome_fantasia", { ascending: true })
+      .limit(50),
     supabase
       .from("produtos")
       .select("id,nome_produto,codigo_referencia_sku,status_moderacao,criado_em")
@@ -197,6 +206,10 @@ export async function getAdminDashboardData() {
     ...store,
     usuarios: Array.isArray(store.usuarios) ? store.usuarios[0] || null : store.usuarios,
   })) as AdminStore[];
+  const partnerStores = (partnerStoresResult.data || []).map((store) => ({
+    ...store,
+    usuarios: Array.isArray(store.usuarios) ? store.usuarios[0] || null : store.usuarios,
+  })) as AdminStore[];
   const reviews = (reviewsResult.data || []).map((review) => ({
     ...review,
     usuarios: Array.isArray(review.usuarios) ? review.usuarios[0] || null : review.usuarios,
@@ -224,6 +237,7 @@ export async function getAdminDashboardData() {
 
   return {
     stores,
+    partnerStores,
     drivers,
     products: (productsResult.data || []) as AdminProduct[],
     logs: (logsResult.data || []) as AuditLog[],

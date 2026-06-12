@@ -2,7 +2,9 @@ import Image from "next/image";
 import { SiteHeader } from "@/components/header/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { VerifiedBadge } from "@/components/common/verified-badge";
+import Link from "next/link";
 import { ProductCard } from "@/components/product/product-card";
+import { PartnerBadge } from "@/components/common/partner-badge";
 import { ProductDetailClient } from "@/components/product/product-detail-client";
 import { TrackableQrCode } from "@/components/qrcode/trackable-qr-code";
 import { getProductDetail, type ProductCustomerReview, type WholesalePriceRule } from "@/lib/data/product-detail";
@@ -361,6 +363,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const subcategory = getSubcategory(product);
   const category = getCategory(subcategory);
   const storeName = getStoreName(product);
+  const store = Array.isArray(product.lojistas) ? product.lojistas[0] : product.lojistas;
+  const sellerName = product.vendido_e_entregue_por || storeName;
   const storeSlug = getStoreSlug(product);
   const premiumPartner = isPremiumPartner(product);
 
@@ -426,13 +430,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 {formatPrice(product.preco_base_varejo)}
                 {product.unidade_medida ? <span className="ml-2 text-xl text-neutral-600">/{product.unidade_medida}</span> : null}
               </p>
-              <a className="mt-3 inline-flex min-h-11 flex-wrap items-center gap-2 rounded-[8px] border border-[#f6b900] bg-[#fff8d6] px-4 text-sm font-black uppercase text-neutral-950" href={`/loja/${storeSlug}`}>
-                <span>Vendido e entregue por: {product.vendido_e_entregue_por || storeName}</span>
+              <Link className="mt-3 inline-flex min-h-11 flex-wrap items-center gap-2 rounded-[8px] border border-[#f6b900] bg-[#fff8d6] px-4 text-sm font-black uppercase text-neutral-950" href={`/loja/${storeSlug}`}>
+                <span>Vendido e entregue por: </span>
+                <span className="inline-flex min-w-0 items-center gap-1 underline decoration-2 underline-offset-2">
+                  <span className="truncate">{sellerName}</span>
+                  {store?.is_partner ? <PartnerBadge level={store.partner_level} size="sm" /> : null}
+                </span>
                 {isProductStoreVerified(product) ? <VerifiedBadge size="lg" label /> : null}
                 {premiumPartner ? (
                   <span className="rounded-full bg-neutral-950 px-2 py-1 text-[11px] text-[#FFD700]">Premium</span>
                 ) : null}
-              </a>
+              </Link>
               {isProductStoreVerified(product) ? (
                 <p className="mt-2 text-sm font-bold text-neutral-700">
                   Compre com seguranca: Este vendedor passou por nossa auditoria de documentos.
