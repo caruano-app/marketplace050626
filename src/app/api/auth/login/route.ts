@@ -7,6 +7,7 @@ type AuthRequest = {
   password: string;
   name?: string;
   profile?: "comprador" | "lojista";
+  captchaToken?: string;
 };
 
 type AttemptState = {
@@ -74,9 +75,14 @@ export async function POST(request: NextRequest) {
   const body = (await request.json()) as AuthRequest;
   const email = body.email?.trim();
   const password = body.password;
+  const captchaToken = body.captchaToken?.trim();
 
   if (!email || !password || !["login", "cadastro"].includes(body.mode)) {
     return NextResponse.json({ error: "Dados de acesso invalidos." }, { status: 400 });
+  }
+
+  if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !captchaToken) {
+    return NextResponse.json({ error: "Confirme o desafio de seguranca antes de continuar." }, { status: 400 });
   }
 
   const rateKey = getRateKey(request, email);
@@ -110,11 +116,16 @@ export async function POST(request: NextRequest) {
 
   const result =
     body.mode === "login"
-      ? await supabase.auth.signInWithPassword({ email, password })
+      ? await supabase.auth.signInWithPassword({
+          email,
+          password,
+          options: captchaToken ? { captchaToken } : undefined,
+        })
       : await supabase.auth.signUp({
           email,
           password,
           options: {
+            captchaToken,
             data: {
               nome_completo: body.name || "",
               perfil_principal: body.profile || "comprador",
