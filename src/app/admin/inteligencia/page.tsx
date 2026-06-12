@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ExportCsvButton } from "@/components/admin/export-csv-button";
 import { SiteHeader } from "@/components/header/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { isCaruanoAdmin } from "@/lib/auth/admin";
 import { getServerSessionClient } from "@/lib/auth/server-session";
 import { getAdminIntelligenceData, type AdminIntelligenceFilters } from "@/lib/data/admin-intelligence";
 
@@ -64,7 +65,7 @@ type AdminIntelligencePageProps = {
 export default async function AdminIntelligencePage({ searchParams }: AdminIntelligencePageProps) {
   const session = await getServerSessionClient();
 
-  if (!session || session.profile.is_admin !== true) {
+  if (!session || !isCaruanoAdmin(session.profile)) {
     redirect("/login?next=/admin/inteligencia");
   }
 

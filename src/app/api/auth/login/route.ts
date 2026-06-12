@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { isCaruanoAdmin } from "@/lib/auth/admin";
 
 type AuthRequest = {
   mode: "login" | "cadastro";
@@ -81,7 +82,7 @@ function saveSessionCookie(response: NextResponse, accessToken: string) {
 function getProfileRedirect(profile: UserProfileRoute | null, fallbackProfile?: string) {
   const role = profile?.perfil_principal || fallbackProfile || "comprador";
 
-  if (profile?.is_admin) {
+  if (isCaruanoAdmin(profile)) {
     return "/admin";
   }
 

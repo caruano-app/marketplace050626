@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { ExportCsvButton } from "@/components/admin/export-csv-button";
 import { SiteHeader } from "@/components/header/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { isCaruanoAdmin } from "@/lib/auth/admin";
 import { getServerSessionClient } from "@/lib/auth/server-session";
 import { getAdminWarehouseData } from "@/lib/data/admin-warehouse";
 
@@ -25,7 +26,7 @@ function formatDate(value: string | null) {
 export default async function AdminWarehousePage({ searchParams }: AdminWarehousePageProps) {
   const session = await getServerSessionClient();
 
-  if (!session || session.profile.is_admin !== true) {
+  if (!session || !isCaruanoAdmin(session.profile)) {
     redirect("/login?next=/admin/galpao-virtual");
   }
 

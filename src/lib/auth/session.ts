@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
+import { isCaruanoAdmin } from "@/lib/auth/admin";
 
 export function getSessionToken(request: NextRequest) {
   const appCookie = request.cookies.get("caruano_session_access_token")?.value;
@@ -198,7 +199,7 @@ export async function getAuthenticatedAdmin(request: NextRequest) {
     .eq("id", authData.user.id)
     .maybeSingle();
 
-  if (profileError || !profile || profile.is_admin !== true) {
+  if (profileError || !profile || !isCaruanoAdmin(profile)) {
     return { error: "Acesso restrito ao Admin Caruano.", status: 403 as const };
   }
 

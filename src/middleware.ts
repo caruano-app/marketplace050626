@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
+import { isCaruanoAdmin } from "@/lib/auth/admin";
 
 type UserProfile = {
   perfil_principal: string | null;
@@ -113,7 +114,7 @@ export async function middleware(request: NextRequest) {
 
   const userProfile = profile as UserProfile;
 
-  if ((pathname === "/admin" || pathname.startsWith("/admin/")) && userProfile.is_admin !== true) {
+  if ((pathname === "/admin" || pathname.startsWith("/admin/")) && !isCaruanoAdmin(userProfile)) {
     const response = redirectToLogin(request);
     if (shouldNoindex) response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;
