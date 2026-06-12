@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth/session";
 import { slugifyCatalogValue } from "@/lib/data/admin-catalog";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
 type RouteContext = {
   params: {
@@ -31,7 +32,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const slug = slugifyCatalogValue(payload.slug_categoria || nome);
   if (!slug) return NextResponse.json({ error: "Slug invalido." }, { status: 400 });
 
-  const { data, error } = await admin.supabase
+  const supabase = createSupabaseServiceRoleClient() || admin.supabase;
+  const { data, error } = await supabase
     .from("categorias_mestre")
     .update({
       nome_categoria: nome,
@@ -54,7 +56,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   const id = parseCategoryId(context.params.id);
   if (!id) return NextResponse.json({ error: "Categoria invalida." }, { status: 400 });
 
-  const { error } = await admin.supabase.from("categorias_mestre").delete().eq("id", id);
+  const supabase = createSupabaseServiceRoleClient() || admin.supabase;
+  const { error } = await supabase.from("categorias_mestre").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   return NextResponse.json({ ok: true });

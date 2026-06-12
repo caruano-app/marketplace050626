@@ -108,14 +108,18 @@ function WideOfferBlock({ products }: { products: ProdutoVitrine[] }) {
   );
 }
 
-export async function MultiCardOffers() {
+type MultiCardOffersProps = {
+  title?: string;
+};
+
+export async function MultiCardOffers({ title = "Ofertas em multicards (Caruano)" }: MultiCardOffersProps) {
   const products = await getFeaturedProducts();
   const premiumProducts = products.length >= 8 ? products : [...products, ...products];
 
   return (
     <section className="mx-auto mt-3 max-w-[1412px] rounded-[6px] border border-neutral-300 bg-white p-2">
       <div className="mb-2 flex h-8 items-center gap-4">
-        <h2 className="text-lg font-black text-neutral-950">Ofertas em multicards (Caruano)</h2>
+        <h2 className="text-lg font-black text-neutral-950">{title}</h2>
         <p className="hidden flex-1 text-center text-sm font-black uppercase text-neutral-500 md:block">
           Area para adicionar os cards dos produtos 1412x482 pixel
         </p>

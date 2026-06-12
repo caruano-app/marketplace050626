@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Montserrat } from "next/font/google";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
@@ -10,6 +10,12 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-montserrat",
 });
 
 export const metadata: Metadata = {
@@ -29,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.variable} antialiased pb-16 md:pb-0`}>
+      <body className={`${inter.variable} ${montserrat.variable} antialiased pb-16 md:pb-0`}>
         {children}
         <CartDrawer />
         <BottomNavigation />

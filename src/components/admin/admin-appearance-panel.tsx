@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import type { AdminAppearanceConfig } from "@/lib/data/admin-appearance";
+import type { AdminAppearanceConfig, HomeSectionConfig } from "@/lib/data/admin-appearance";
 
 type AdminAppearancePanelProps = {
   initialConfig: AdminAppearanceConfig;
@@ -36,6 +36,7 @@ export function AdminAppearancePanel({ initialConfig }: AdminAppearancePanelProp
     heroBannerUrl: initialConfig.heroBannerUrl,
     highlightBannerUrl: initialConfig.highlightBannerUrl,
   });
+  const [homeSections, setHomeSections] = useState<HomeSectionConfig[]>(initialConfig.homeSections);
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState<UploadField | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -57,7 +58,7 @@ export function AdminAppearancePanel({ initialConfig }: AdminAppearancePanelProp
       const response = await fetch("/api/admin/appearance", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ primaryColor, marqueeText }),
+        body: JSON.stringify({ primaryColor, marqueeText, homeSections }),
       });
       const payload = (await response.json()) as { error?: string; primaryColor?: string };
 
@@ -72,6 +73,14 @@ export function AdminAppearancePanel({ initialConfig }: AdminAppearancePanelProp
       }
       setMessage("Aparencia salva. A Home passa a ler esta configuracao.");
     });
+  }
+
+  function updateHomeSection(key: HomeSectionConfig["key"], patch: Partial<HomeSectionConfig>) {
+    setHomeSections((current) =>
+      current
+        .map((section) => (section.key === key ? { ...section, ...patch } : section))
+        .sort((a, b) => a.order - b.order),
+    );
   }
 
   async function uploadAsset(field: UploadField) {
@@ -154,6 +163,51 @@ export function AdminAppearancePanel({ initialConfig }: AdminAppearancePanelProp
           value={marqueeText}
         />
       </label>
+
+      <div className="mt-5 rounded-[8px] border border-neutral-200 bg-neutral-50 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-black uppercase text-neutral-950">Blocos da Home</h3>
+            <p className="mt-1 text-xs font-bold text-neutral-500">Altere titulo, ordem e visibilidade sem mexer no codigo.</p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-2 text-xs font-black uppercase text-neutral-600">
+            {homeSections.filter((section) => section.enabled).length} ativos
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2">
+          {homeSections.map((section) => (
+            <div className="grid gap-2 rounded-[8px] border border-neutral-200 bg-white p-3 md:grid-cols-[82px_1fr_130px]" key={section.key}>
+              <label className="text-xs font-black uppercase text-neutral-600">
+                Ordem
+                <input
+                  className="mt-2 h-11 w-full rounded-[8px] border border-neutral-300 px-3 text-sm font-black text-neutral-950"
+                  min={1}
+                  onChange={(event) => updateHomeSection(section.key, { order: Number(event.target.value) || section.order })}
+                  type="number"
+                  value={section.order}
+                />
+              </label>
+              <label className="text-xs font-black uppercase text-neutral-600">
+                Titulo do bloco
+                <input
+                  className="mt-2 h-11 w-full rounded-[8px] border border-neutral-300 px-3 text-sm font-bold text-neutral-950"
+                  onChange={(event) => updateHomeSection(section.key, { title: event.target.value })}
+                  value={section.title}
+                />
+              </label>
+              <label className="flex min-h-11 items-center justify-between gap-3 self-end rounded-[8px] border border-neutral-300 px-3 text-xs font-black uppercase text-neutral-700">
+                Ativo
+                <input
+                  checked={section.enabled}
+                  className="h-5 w-5 accent-[var(--primary)]"
+                  onChange={(event) => updateHomeSection(section.key, { enabled: event.target.checked })}
+                  type="checkbox"
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-5 grid gap-3 lg:grid-cols-3">
         {(Object.keys(uploadLabels) as UploadField[]).map((field) => (

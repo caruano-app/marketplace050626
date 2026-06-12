@@ -1,13 +1,17 @@
 import { getFeaturedCategories } from "@/lib/data/categories";
 import { SectionHeading } from "./section-heading";
 
-export async function FeaturedCategories() {
+type FeaturedCategoriesProps = {
+  title?: string;
+};
+
+export async function FeaturedCategories({ title = "Categorias em destaques" }: FeaturedCategoriesProps) {
   const categories = await getFeaturedCategories();
 
   return (
     <section className="mx-auto mt-3 h-[260px] max-w-[1412px] rounded-[6px] border border-neutral-300 bg-neutral-50 p-2">
       <SectionHeading
-        title="Categorias em destaques"
+        title={title}
         note="Area do card para adicionar os produtos 1412x260 pixel"
         href="/categorias"
       />

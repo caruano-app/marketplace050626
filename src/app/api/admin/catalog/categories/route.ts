@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth/session";
 import { slugifyCatalogValue } from "@/lib/data/admin-catalog";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   const admin = await getAuthenticatedAdmin(request);
@@ -17,7 +18,8 @@ export async function POST(request: NextRequest) {
   const slug = slugifyCatalogValue(payload.slug_categoria || nome);
   if (!slug) return NextResponse.json({ error: "Slug invalido." }, { status: 400 });
 
-  const { data, error } = await admin.supabase
+  const supabase = createSupabaseServiceRoleClient() || admin.supabase;
+  const { data, error } = await supabase
     .from("categorias_mestre")
     .insert({
       nome_categoria: nome,

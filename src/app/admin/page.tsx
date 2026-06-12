@@ -31,9 +31,6 @@ export default async function AdminPage() {
       <SiteHeader />
       <AdminMasterShell>
         <main className="grid gap-4 pb-24">
-          <AdminAppearancePanel initialConfig={appearance} />
-          <AdminCatalogPanel categories={catalog.categories} subcategories={catalog.subcategories} />
-          <AdminContentPanel initialFooter={appearance.footer} />
           <AdminControlTower
             categorySuggestions={categorySuggestions}
             leads={leads}
@@ -46,6 +43,9 @@ export default async function AdminPage() {
             stores={stores}
             partnerStores={partnerStores}
           />
+          <AdminAppearancePanel initialConfig={appearance} />
+          <AdminCatalogPanel categories={catalog.categories} subcategories={catalog.subcategories} />
+          <AdminContentPanel initialFooter={appearance.footer} />
         </main>
       </AdminMasterShell>
       <SiteFooter />

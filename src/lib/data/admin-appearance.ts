@@ -7,6 +7,7 @@ export type AdminAppearanceConfig = {
   heroBannerUrl: string | null;
   highlightBannerUrl: string | null;
   marqueeText: string;
+  homeSections: HomeSectionConfig[];
   footer: FooterConfig;
   source: "database" | "fallback";
   message?: string;
@@ -24,12 +25,31 @@ export type FooterConfig = {
   copyright: string;
 };
 
+export type HomeSectionKey =
+  | "hero"
+  | "featured"
+  | "multicards"
+  | "categories"
+  | "daily"
+  | "highlight"
+  | "stories"
+  | "fair"
+  | "lives";
+
+export type HomeSectionConfig = {
+  key: HomeSectionKey;
+  title: string;
+  enabled: boolean;
+  order: number;
+};
+
 export type SiteCmsPatch = Partial<{
   primaryColor: string;
   logoUrl: string | null;
   heroBannerUrl: string | null;
   highlightBannerUrl: string | null;
   marqueeText: string;
+  homeSections: HomeSectionConfig[];
   footer: FooterConfig;
 }>;
 
@@ -63,9 +83,24 @@ const fallbackAppearance: AdminAppearanceConfig = {
   heroBannerUrl: null,
   highlightBannerUrl: null,
   marqueeText: "Banner promocional | edita cor, imagem, texto animado se deslocando para esquerda, categorias, lojas, seleciona paginas onde aparece",
+  homeSections: defaultHomeSections(),
   footer: fallbackFooter,
   source: "fallback",
 };
+
+export function defaultHomeSections(): HomeSectionConfig[] {
+  return [
+    { key: "hero", title: "Banner principal", enabled: true, order: 1 },
+    { key: "featured", title: "Destaques da semana", enabled: true, order: 2 },
+    { key: "multicards", title: "Ofertas em multicards (Caruano)", enabled: true, order: 3 },
+    { key: "categories", title: "Categorias em destaques", enabled: true, order: 4 },
+    { key: "daily", title: "Ofertas do dia", enabled: true, order: 5 },
+    { key: "highlight", title: "Banner destaque", enabled: true, order: 6 },
+    { key: "stories", title: "Categorias de lives mini videos", enabled: true, order: 7 },
+    { key: "fair", title: "Ofertas da feira", enabled: true, order: 8 },
+    { key: "lives", title: "Lives Sop", enabled: true, order: 9 },
+  ];
+}
 
 type ConfigRow = Record<string, unknown>;
 
@@ -132,6 +167,31 @@ function linkList(value: unknown, fallback: FooterLink[]) {
   return links.length ? links : fallback;
 }
 
+function isHomeSectionKey(value: unknown): value is HomeSectionKey {
+  return typeof value === "string" && defaultHomeSections().some((section) => section.key === value);
+}
+
+export function normalizeHomeSections(value: unknown) {
+  const defaults = defaultHomeSections();
+  const defaultByKey = new Map(defaults.map((section) => [section.key, section]));
+  const custom = Array.isArray(value) ? value : [];
+
+  for (const item of custom) {
+    const object = objectValue(item);
+    if (!object || !isHomeSectionKey(object.key)) continue;
+    const current = defaultByKey.get(object.key);
+    if (!current) continue;
+    defaultByKey.set(object.key, {
+      ...current,
+      title: textValue(object.title) || current.title,
+      enabled: typeof object.enabled === "boolean" ? object.enabled : current.enabled,
+      order: Number.isFinite(Number(object.order)) ? Number(object.order) : current.order,
+    });
+  }
+
+  return Array.from(defaultByKey.values()).sort((a, b) => a.order - b.order);
+}
+
 function extractConfig(row: ConfigRow | null): AdminAppearanceConfig {
   const config = rowObject(row);
   const footer = objectValue(config.footer) || objectValue(config.rodape) || {};
@@ -142,6 +202,7 @@ function extractConfig(row: ConfigRow | null): AdminAppearanceConfig {
     heroBannerUrl: textValue(config.heroBannerUrl) || textValue(config.banner_principal_url) || textValue(config.hero_banner_url),
     highlightBannerUrl: textValue(config.highlightBannerUrl) || textValue(config.banner_destaque_url) || textValue(config.highlight_banner_url),
     marqueeText: textValue(config.marqueeText) || textValue(config.marquee_text) || textValue(config.letreiro) || fallbackAppearance.marqueeText,
+    homeSections: normalizeHomeSections(config.homeSections || config.secoes_home || row?.["secoes_home"]),
     footer: {
       institucional: linkList(footer.institucional, fallbackFooter.institucional),
       ajuda: linkList(footer.ajuda, fallbackFooter.ajuda),
@@ -159,11 +220,13 @@ function buildUpdatePayload(row: ConfigRow, patch: SiteCmsPatch) {
     ...patch,
     cor_primaria: patch.primaryColor || currentConfig.cor_primaria,
     primary: patch.primaryColor || currentConfig.primary,
+    secoes_home: patch.homeSections || currentConfig.secoes_home,
   };
 
   if ("cor_primaria" in row && patch.primaryColor && Object.keys(patch).length === 1) return { cor_primaria: patch.primaryColor };
   if ("primary_color" in row && patch.primaryColor && Object.keys(patch).length === 1) return { primary_color: patch.primaryColor };
   if ("primaryColor" in row && patch.primaryColor && Object.keys(patch).length === 1) return { primaryColor: patch.primaryColor };
+  if ("secoes_home" in row && patch.homeSections && Object.keys(patch).length === 1) return { secoes_home: patch.homeSections };
   for (const field of ["valor", "value", "metadata", "configuracoes", "cores"]) {
     if (field in row) return { [field]: nextConfig };
   }
@@ -236,6 +299,7 @@ export async function updateSiteCmsConfig(supabase: SupabaseClient, patch: SiteC
     ...normalizedPatch,
     cor_primaria: normalizedPatch.primaryColor || fallbackAppearance.primaryColor,
     primary: normalizedPatch.primaryColor || fallbackAppearance.primaryColor,
+    secoes_home: normalizedPatch.homeSections || fallbackAppearance.homeSections,
   };
 
   const attempts = [

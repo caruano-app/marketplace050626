@@ -19,6 +19,18 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-montserrat), var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+.font-price {
+  font-family: var(--font-montserrat), var(--font-inter), Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
+}
+
 html,
 body {
   min-height: 100%;

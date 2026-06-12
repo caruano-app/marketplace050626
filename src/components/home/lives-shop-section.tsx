@@ -2,13 +2,17 @@ import { getLiveShopStories } from "@/lib/data/stories";
 import { LiveCard } from "./live-card";
 import { SectionHeading } from "./section-heading";
 
-export async function LivesShopSection() {
+type LivesShopSectionProps = {
+  title?: string;
+};
+
+export async function LivesShopSection({ title = "Lives Sop" }: LivesShopSectionProps) {
   const stories = await getLiveShopStories();
 
   return (
     <section className="mx-auto mt-3 h-[482px] max-w-[1412px] rounded-[6px] border border-neutral-300 bg-white p-2">
       <SectionHeading
-        title="Lives Sop"
+        title={title}
         note="Area do card para adicionar as lives 1412x482 pixel"
         href="/lives"
         actionLabel="Ver todas v"

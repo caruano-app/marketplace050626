@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedAdmin } from "@/lib/auth/session";
 import { updateSiteCmsConfig, type SiteCmsPatch } from "@/lib/data/admin-appearance";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
 const assetFields = {
   logoUrl: "logo",
@@ -26,7 +27,8 @@ export async function PATCH(request: NextRequest) {
   if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const payload = (await request.json()) as SiteCmsPatch;
-  const result = await updateSiteCmsConfig(admin.supabase, payload);
+  const supabase = createSupabaseServiceRoleClient() || admin.supabase;
+  const result = await updateSiteCmsConfig(supabase, payload);
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });
@@ -62,8 +64,9 @@ export async function POST(request: NextRequest) {
   const extension = extensionFromFile(file);
   const path = `home/${assetFields[assetType]}-${Date.now()}-${crypto.randomUUID()}.${extension}`;
   const buffer = await file.arrayBuffer();
+  const supabase = createSupabaseServiceRoleClient() || admin.supabase;
 
-  const { error: uploadError } = await admin.supabase.storage.from("assets").upload(path, buffer, {
+  const { error: uploadError } = await supabase.storage.from("assets").upload(path, buffer, {
     contentType: file.type,
     upsert: false,
   });
@@ -72,9 +75,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: uploadError.message }, { status: 400 });
   }
 
-  const { data } = admin.supabase.storage.from("assets").getPublicUrl(path);
+  const { data } = supabase.storage.from("assets").getPublicUrl(path);
   const publicUrl = data.publicUrl;
-  const result = await updateSiteCmsConfig(admin.supabase, { [assetType]: publicUrl });
+  const result = await updateSiteCmsConfig(supabase, { [assetType]: publicUrl });
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });
