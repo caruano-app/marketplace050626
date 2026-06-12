@@ -19,8 +19,10 @@ body {
 
 html,
 body {
-  overflow-x: hidden;
-  overscroll-behavior-y: contain;
+  min-height: 100%;
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
 }
 
 * {
