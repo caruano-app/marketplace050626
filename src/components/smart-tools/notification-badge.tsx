@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AppNotification } from "@/lib/data/notifications";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type NotificationsResponse = {
   notifications: AppNotification[];
   unread: number;
+  error?: string;
+};
+
+type RealtimeSessionResponse = {
+  userId?: string;
+  accessToken?: string;
   error?: string;
 };
 
@@ -32,13 +39,14 @@ export function NotificationBell({ placement = "fixed" }: NotificationBellProps)
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const [message, setMessage] = useState("");
+  const [toast, setToast] = useState("");
 
   const wrapperClass = useMemo(() => {
     if (placement === "inline") return "relative";
     return "fixed right-4 top-4 z-40";
   }, [placement]);
 
-  async function loadNotifications() {
+  const loadNotifications = useCallback(async () => {
     const response = await fetch("/api/notifications", { cache: "no-store" });
     const payload = (await response.json()) as NotificationsResponse;
 
@@ -52,7 +60,7 @@ export function NotificationBell({ placement = "fixed" }: NotificationBellProps)
     setNotifications(payload.notifications || []);
     setUnread(payload.unread || 0);
     setMessage("");
-  }
+  }, []);
 
   async function markAsRead(notification: AppNotification) {
     if (!notification.lida) {
@@ -67,8 +75,63 @@ export function NotificationBell({ placement = "fixed" }: NotificationBellProps)
 
   useEffect(() => {
     void loadNotifications();
-    const timer = window.setInterval(() => void loadNotifications(), 45000);
-    return () => window.clearInterval(timer);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    let toastTimer: number | undefined;
+    const supabase = createSupabaseBrowserClient();
+
+    if (!supabase) {
+      return undefined;
+    }
+
+    const realtimeClient = supabase;
+
+    async function subscribeToNotifications() {
+      const response = await fetch("/api/notifications/realtime", { cache: "no-store" });
+      const payload = (await response.json()) as RealtimeSessionResponse;
+
+      if (!response.ok || payload.error || !payload.userId || !payload.accessToken) {
+        return undefined;
+      }
+
+      realtimeClient.realtime.setAuth(payload.accessToken);
+
+      const channel = realtimeClient
+        .channel(`notificacoes:${payload.userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notificacoes",
+            filter: `usuario_id=eq.${payload.userId}`,
+          },
+          (event) => {
+            const notification = event.new as AppNotification;
+            setNotifications((current) => [notification, ...current.filter((item) => item.id !== notification.id)].slice(0, 20));
+            setUnread((current) => current + (notification.lida ? 0 : 1));
+            setToast(notification.titulo || "Nova notificacao Caruano");
+            window.clearTimeout(toastTimer);
+            toastTimer = window.setTimeout(() => setToast(""), 4200);
+          },
+        )
+        .subscribe();
+
+      return channel;
+    }
+
+    let activeChannel: Awaited<ReturnType<typeof subscribeToNotifications>> | undefined;
+    void subscribeToNotifications().then((channel) => {
+      activeChannel = channel;
+    });
+
+    return () => {
+      window.clearTimeout(toastTimer);
+      if (activeChannel) {
+        void realtimeClient.removeChannel(activeChannel);
+      }
+    };
   }, []);
 
   return (
@@ -128,6 +191,12 @@ export function NotificationBell({ placement = "fixed" }: NotificationBellProps)
               ) : null}
             </div>
           </section>
+        </div>
+      ) : null}
+
+      {toast ? (
+        <div className="fixed left-3 right-3 top-3 z-[60] rounded-[10px] border border-[#FFC300] bg-zinc-900 p-3 text-sm font-black uppercase text-[#FFC300] shadow-xl md:left-auto md:right-5 md:max-w-sm">
+          {toast}
         </div>
       ) : null}
     </>
