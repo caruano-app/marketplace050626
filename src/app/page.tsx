@@ -12,6 +12,8 @@ import { StoriesSection } from "@/components/home/stories-section";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { getHomeStories } from "@/lib/data/stories";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const floatingStories = await getHomeStories();
 

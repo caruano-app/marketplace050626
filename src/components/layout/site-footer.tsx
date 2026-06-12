@@ -1,40 +1,32 @@
+import { getAdminAppearanceConfig, type FooterLink } from "@/lib/data/admin-appearance";
+
 const paymentBadges = ["McAfee", "Norton", "Visa", "Mastercard", "Pix", "Skrill", "PayPal"];
 
-export function SiteFooter() {
+function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) {
+  return (
+    <div>
+      <h2 className="mb-3 text-2xl font-black">{title}</h2>
+      <ul className="space-y-2 text-lg">
+        {links.map((link) => (
+          <li key={`${title}-${link.label}-${link.href}`}>
+            <a href={link.href}>{link.label}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export async function SiteFooter() {
+  const appearance = await getAdminAppearanceConfig();
+  const footer = appearance.footer;
+
   return (
     <footer className="mt-4 bg-[#ffd700] text-neutral-950">
       <div className="mx-auto grid max-w-[1412px] gap-10 px-10 py-12 md:grid-cols-[1fr_1fr_1.2fr_1.8fr]">
-        <div>
-          <h2 className="mb-3 text-2xl font-black">Institucional</h2>
-          <ul className="space-y-2 text-lg">
-            <li><a href="/sobre">Sobre o Caruano</a></li>
-            <li><a href="/criar-loja">Seja Lojista</a></li>
-            <li><a href="/contato">Contato</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h2 className="mb-3 text-2xl font-black">Ajuda</h2>
-          <ul className="space-y-2 text-lg">
-            <li><a href="/faq">FAQ</a></li>
-            <li><a href="/trocas-e-devolucoes">Trocas e Devolucoes</a></li>
-            <li><a href="/prazos-de-entrega">Prazos de Entrega</a></li>
-            <li><a href="/frete">Frete</a></li>
-            <li><a href="/rastrear-pedido">Rastrear Pedido</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h2 className="mb-3 text-2xl font-black">Links Uteis</h2>
-          <ul className="space-y-2 text-lg">
-            <li><a href="/nota-da-moda">Nota da Moda</a></li>
-            <li><a href="/blog">Bolg</a></li>
-            <li><a href="/servicos-em-destaques">Servicos em Destaques</a></li>
-            <li><a href="/lojas-premium">Lojas Premium</a></li>
-            <li><a href="/entrevistas">Entrevistas</a></li>
-            <li><a href="/lives">Lives</a></li>
-          </ul>
-        </div>
+        <FooterColumn links={footer.institucional} title="Institucional" />
+        <FooterColumn links={footer.ajuda} title="Ajuda" />
+        <FooterColumn links={footer.linksUteis} title="Links Uteis" />
 
         <div className="space-y-8">
           <form className="flex h-12 w-full max-w-[520px]">
@@ -60,9 +52,7 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="bg-[#d6aa2a] py-3 text-center text-sm">
-        Caruano | caruano.com - Direitos reservados
-      </div>
+      <div className="bg-[#d6aa2a] py-3 text-center text-sm">{footer.copyright}</div>
     </footer>
   );
 }

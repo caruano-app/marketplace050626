@@ -28,7 +28,7 @@ const groups = [
   {
     label: "Catalogo",
     items: [
-      { label: "Categorias", href: "/admin#categorias", icon: "M4 5h6v4H4V5Zm10 0h6v4h-6V5ZM4 15h6v4H4v-4Zm10 0h6v4h-6v-4ZM7 9v6m10-6v6M10 7h4" },
+      { label: "Categorias", href: "/admin#admin-catalogo", icon: "M4 5h6v4H4V5Zm10 0h6v4h-6V5ZM4 15h6v4H4v-4Zm10 0h6v4h-6v-4ZM7 9v6m10-6v6M10 7h4" },
       { label: "Galpao Virtual", href: "/admin/galpao-virtual", icon: "M4 7h16v12H4V7Zm2-4h12l2 4H4l2-4Z" },
     ],
   },
@@ -50,6 +50,7 @@ const groups = [
 
 const menuIcon = "M4 6h16M4 12h16M4 18h16";
 const logoutIcon = "M10 6H5v12h5M14 8l4 4-4 4M8 12h10";
+const externalIcon = "M14 3h7v7M10 14 21 3M21 14v6H4V4h6";
 
 function AdminIcon({ path }: { path: string }) {
   return (
@@ -116,6 +117,10 @@ export function AdminMasterShell({ children }: AdminMasterShellProps) {
           <span aria-hidden="true">&gt;</span>
         </summary>
         <div className="mt-3">{navigation}</div>
+        <a className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--primary)] px-4 text-sm font-black uppercase text-neutral-950" href="/" target="_blank" rel="noreferrer">
+          <AdminIcon path={externalIcon} />
+          Visualizar site
+        </a>
         <button className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white" onClick={logout} type="button">
           <AdminIcon path={logoutIcon} />
           Sair
@@ -129,6 +134,10 @@ export function AdminMasterShell({ children }: AdminMasterShellProps) {
             <p className="mt-1 text-lg font-black uppercase">Torre Caruano</p>
           </div>
           <div className="mt-4">{navigation}</div>
+          <a className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--primary)] px-4 text-sm font-black uppercase text-neutral-950" href="/" target="_blank" rel="noreferrer">
+            <AdminIcon path={externalIcon} />
+            Visualizar site
+          </a>
           <button className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-neutral-950 px-4 text-sm font-black uppercase text-white" onClick={logout} type="button">
             <AdminIcon path={logoutIcon} />
             Sair
