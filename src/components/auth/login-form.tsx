@@ -48,7 +48,7 @@ export function LoginForm() {
       return;
     }
 
-    setStatus("Cadastro recebido. Confirme o e-mail, se o Supabase exigir validacao.");
+    setStatus("Cadastro recebido! Enviamos um e-mail de confirmação para ativar sua conta no Caruano. Verifique também a caixa de spam ou promoções.");
     setIsSubmitting(false);
   }
 
