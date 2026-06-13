@@ -1,4 +1,4 @@
-import nextDynamic from "next/dynamic";
+﻿import nextDynamic from "next/dynamic";
 import { AdminAppearancePanel } from "@/components/admin/admin-appearance-panel";
 import { AdminCatalogPanel } from "@/components/admin/admin-catalog-panel";
 import { AdminContentPanel } from "@/components/admin/admin-content-panel";
