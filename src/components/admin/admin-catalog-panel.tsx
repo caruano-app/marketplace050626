@@ -1,33 +1,43 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
-export function AdminCatalogPanel() {
-  const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+type Category = {
+  id: string;
+  nome_categoria: string;
+  slug_categoria: string;
+  tipo_nicho: string;
+  subcategorias_mestre: Subcategory[];
+};
+
+type Subcategory = {
+  id: string;
+  nome_subcategoria: string;
+  slug_subcategoria: string;
+  categoria_pai_id: string;
+};
+
+type Props = {
+  categories: Category[];
+  subcategories: Subcategory[];
+};
+
+export function AdminCatalogPanel({ categories: initialCategories }: Props) {
+  const [categories, setCategories] = useState(initialCategories || []);
   const [newCat, setNewCat] = useState({ nome: '', nicho: 'geral' });
   const [newSub, setNewSub] = useState({ nome: '', paiId: '' });
+  const [loading, setLoading] = useState(false);
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('categorias_mestre')
-        .select('*, subcategorias_mestre(*)')
-        .order('nome_categoria');
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (err) {
-      console.error('Erro:', err);
-    } finally {
-      setLoading(false);
-    }
+  async function reloadData() {
+    setLoading(true);
+    const { data } = await supabase
+      .from('categorias_mestre')
+      .select('*, subcategorias_mestre(*)')
+      .order('nome_categoria');
+    setCategories(data || []);
+    setLoading(false);
   }
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   async function createCategory() {
     if (!newCat.nome) return alert('Digite o nome');
@@ -39,7 +49,7 @@ export function AdminCatalogPanel() {
     else {
       alert('Sucesso!');
       setNewCat({ nome: '', nicho: 'geral' });
-      loadData();
+      reloadData();
     }
   }
 
@@ -53,11 +63,9 @@ export function AdminCatalogPanel() {
     else {
       alert('Sucesso!');
       setNewSub({ nome: '', paiId: '' });
-      loadData();
+      reloadData();
     }
   }
-
-  if (loading) return <div className="p-4">Carregando catálogo...</div>;
 
   return (
     <div className="space-y-6 rounded-lg border bg-white p-6 shadow-sm">
@@ -84,7 +92,8 @@ export function AdminCatalogPanel() {
           </select>
           <button
             onClick={createCategory}
-            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            disabled={loading}
+            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           >
             CRIAR CATEGORIA
           </button>
@@ -100,7 +109,7 @@ export function AdminCatalogPanel() {
             onChange={(e) => setNewSub({ ...newSub, paiId: e.target.value })}
           >
             <option value="">Selecionar Categoria Pai...</option>
-            {categories.map((c: any) => (
+            {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome_categoria}
               </option>
@@ -115,7 +124,8 @@ export function AdminCatalogPanel() {
           />
           <button
             onClick={createSub}
-            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            disabled={loading}
+            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           >
             CRIAR SUBCATEGORIA
           </button>
@@ -124,12 +134,13 @@ export function AdminCatalogPanel() {
 
       <div className="space-y-2">
         <h3 className="font-semibold">Categorias Ativas</h3>
+        {loading && <div className="p-4">Carregando...</div>}
         <div className="space-y-3">
-          {categories.map((c: any) => (
+          {categories.map((c) => (
             <div key={c.id} className="rounded border p-3">
               <p className="font-medium">{c.nome_categoria}</p>
               <div className="ml-4 mt-1 space-y-1 text-sm text-gray-600">
-                {c.subcategorias_mestre?.map((s: any) => (
+                {c.subcategorias_mestre?.map((s) => (
                   <div key={s.id}>• {s.nome_subcategoria}</div>
                 ))}
               </div>
