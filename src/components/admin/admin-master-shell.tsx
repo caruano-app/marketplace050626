@@ -2,33 +2,19 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  LayoutDashboard, 
-  Palette, 
-  FolderTree, 
-  ShoppingCart, 
-  ShieldCheck, 
-  Users, 
-  Truck, 
-  FileText,
-  LogOut,
-  Menu,
-  X,
-  ExternalLink
-} from 'lucide-react';
 
 export default function AdminMasterShell({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
-    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin' },
-    { label: 'Aparência (CMS)', icon: <Palette size={20} />, href: '/admin?tab=aparencia' },
-    { label: 'Catálogo', icon: <FolderTree size={20} />, href: '/admin?tab=catalogo' },
-    { label: 'Vendas & B2B', icon: <ShoppingCart size={20} />, href: '/admin?tab=vendas' },
-    { label: 'Segurança (KYC)', icon: <ShieldCheck size={20} />, href: '/admin?tab=kyc' },
-    { label: 'Equipe', icon: <Users size={20} />, href: '/admin?tab=equipe' },
-    { label: 'Logística', icon: <Truck size={20} />, href: '/admin?tab=logistica' },
-    { label: 'Conteúdo', icon: <FileText size={20} />, href: '/admin?tab=conteudo' },
+    { label: 'Dashboard', icon: '📊', href: '/admin' },
+    { label: 'Aparência (CMS)', icon: '🎨', href: '/admin?tab=aparencia' },
+    { label: 'Catálogo', icon: '📁', href: '/admin?tab=catalogo' },
+    { label: 'Vendas & B2B', icon: '🛒', href: '/admin?tab=vendas' },
+    { label: 'Segurança (KYC)', icon: '🛡️', href: '/admin?tab=kyc' },
+    { label: 'Equipe', icon: '👥', href: '/admin?tab=equipe' },
+    { label: 'Logística', icon: '🚚', href: '/admin?tab=logistica' },
+    { label: 'Conteúdo', icon: '📝', href: '/admin?tab=conteudo' },
   ];
 
   return (
@@ -47,7 +33,7 @@ export default function AdminMasterShell({ children }: { children: React.ReactNo
               href={item.href}
               className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-zinc-800 hover:text-[#FFC300] font-bold transition-all group"
             >
-              <span className="text-zinc-500 group-hover:text-[#FFC300] transition-colors">{item.icon}</span>
+              <span className="text-xl">{item.icon}</span>
               {item.label}
             </Link>
           ))}
@@ -55,10 +41,10 @@ export default function AdminMasterShell({ children }: { children: React.ReactNo
 
         <div className="mt-auto pt-6 border-t border-zinc-800 space-y-2">
           <Link href="/" className="flex items-center gap-3 p-3 text-zinc-400 hover:text-white text-sm transition-colors">
-            <ExternalLink size={18} /> Visualizar Site
+            🔗 Visualizar Site
           </Link>
           <button className="flex items-center gap-3 p-3 w-full text-red-400 hover:text-red-300 text-sm font-bold transition-colors">
-            <LogOut size={18} /> Sair da Torre
+            🚪 Sair da Torre
           </button>
         </div>
       </aside>
@@ -68,12 +54,12 @@ export default function AdminMasterShell({ children }: { children: React.ReactNo
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         className="lg:hidden fixed top-4 right-4 z-[60] bg-black text-[#FFC300] p-3 rounded-full shadow-lg"
       >
-        {isMobileMenuOpen ? <X /> : <Menu />}
+        {isMobileMenuOpen ? '✕' : '☰'}
       </button>
 
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 bg-black z-[55] p-8 flex flex-col gap-4 text-white">
-          <div className="text-[#FFC300] font-black text-2xl mb-8">CARUANO 360</div>
+          <div className="text-[#FFC300] font-black text-2xl mb-8 uppercase">Caruano 360</div>
           {menuItems.map((item) => (
             <Link 
               key={item.label} 
@@ -87,7 +73,7 @@ export default function AdminMasterShell({ children }: { children: React.ReactNo
         </div>
       )}
 
-      {/* Área de Conteúdo (O Frame) */}
+      {/* Área de Conteúdo */}
       <main className="flex-1 lg:ml-72 min-h-screen">
         <div className="max-w-[1412px] mx-auto">
           {children}
