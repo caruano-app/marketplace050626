@@ -8,7 +8,7 @@ export default function SiteHeader() {
       <div className="max-w-[1412px] mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="text-2xl font-black text-black tracking-tighter uppercase">CARUANO</Link>
         <div className="flex items-center gap-4 text-black font-bold text-xs uppercase">
-          <Link href="/admin">Painel</Link>
+          <Link href="/admin" className="hover:opacity-70">Painel</Link>
           <Link href="/checkout" className="bg-black text-white px-4 py-2 rounded-full">Carrinho</Link>
         </div>
       </div>
@@ -16,5 +16,6 @@ export default function SiteHeader() {
   );
 }
 
-// Exportação nomeada para garantir compatibilidade
-export { SiteHeader };
+// Exportação nomeada para garantir que ninguém quebre
+export const SiteHeader = () => <SiteHeaderComponent />;
+const SiteHeaderComponent = SiteHeader;
