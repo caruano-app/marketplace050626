@@ -1,39 +1,43 @@
-import Image from "next/image";
-import { getHeaderCategories } from "@/lib/data/categories";
-import { getAdminAppearanceConfig } from "@/lib/data/admin-appearance";
-import { CategoryMenu } from "./category-menu";
-import { HeaderActions } from "./header-actions";
-import { PromoMarquee } from "./promo-marquee";
-import { SearchBar } from "./search-bar";
+'use client';
+import React from 'react';
+import Link from 'next/link';
 
-export async function SiteHeader() {
-  const categories = await getHeaderCategories();
-  const appearance = await getAdminAppearanceConfig();
-
+export default function SiteHeader() {
   return (
-    <header className="w-full overflow-hidden bg-[#f6b900] text-neutral-950">
-      <PromoMarquee text={appearance.marqueeText} />
-      <div className="mx-auto flex min-h-[96px] max-w-[1440px] flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:gap-8 md:px-8">
-        <div className="flex w-full items-center justify-between gap-4 md:w-auto">
-          <a className="shrink-0 text-[38px] font-black leading-none tracking-normal text-neutral-950 md:text-[44px]" href="/">
-            {appearance.logoUrl ? (
-              <Image alt="Caruano" className="h-12 w-auto object-contain" height={56} priority src={appearance.logoUrl} width={220} />
-            ) : (
-              "Caruano"
-            )}
-          </a>
+    <header className="w-full bg-[#FFC300] sticky top-0 z-[100]">
+      {/* Linha Superior - Busca */}
+      <div className="max-w-[1412px] mx-auto px-4 h-16 flex items-center gap-8">
+        <Link href="/" className="text-2xl font-black tracking-tighter text-black">
+          CARUANO
+        </Link>
+        
+        <div className="flex-1 hidden md:flex relative">
+          <input 
+            type="text" 
+            placeholder="O que você está procurando hoje?" 
+            className="w-full h-10 px-5 rounded-full text-sm outline-none border-none shadow-inner"
+          />
+          <button className="absolute right-0 bg-black text-white h-10 px-6 rounded-full text-xs font-bold uppercase">
+            Buscar
+          </button>
         </div>
-        <div className="flex w-full flex-1 justify-center">
-          <SearchBar />
-        </div>
-        <div className="hidden md:block">
-          <HeaderActions />
+
+        <div className="flex items-center gap-6 text-black font-bold text-xs uppercase tracking-widest">
+          <Link href="/login" className="hover:opacity-70">Entrar</Link>
+          <Link href="/checkout" className="bg-black text-white px-4 py-2 rounded-full">Carrinho</Link>
         </div>
       </div>
-      <div className="mx-auto hidden max-w-[1440px] px-8 pb-1 text-center text-[10px] font-bold uppercase text-neutral-800 lg:block">
-        Funcao dos menus: categorias | paginas | produtos | link externo | cidades | lojas | afiliados mercado livre
+
+      {/* Linha Inferior - Menu */}
+      <div className="bg-white border-b border-zinc-100">
+        <div className="max-w-[1412px] mx-auto px-4 h-10 flex items-center gap-6 overflow-x-auto no-scrollbar">
+          {['Moda', 'Alimentos', 'Insumos', 'Serviços', 'Vagas', 'Clube'].map((item) => (
+            <Link key={item} href={`/categoria/${item.toLowerCase()}`} className="text-[11px] font-bold text-zinc-600 hover:text-black uppercase whitespace-nowrap">
+              {item}
+            </Link>
+          ))}
+        </div>
       </div>
-      <CategoryMenu categories={categories} />
     </header>
   );
 }
