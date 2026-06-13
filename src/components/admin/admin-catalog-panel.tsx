@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
-export default function AdminCatalogPanel() {
+export function AdminCatalogPanel() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCat, setNewCat] = useState({ nome: '', nicho: 'geral' });
@@ -63,7 +63,6 @@ export default function AdminCatalogPanel() {
     <div className="space-y-6 rounded-lg border bg-white p-6 shadow-sm">
       <h2 className="text-xl font-bold">Gestão de Catálogo</h2>
 
-      {/* Criar Categoria */}
       <div className="space-y-2">
         <h3 className="font-semibold">Nova Categoria Mestre</h3>
         <div className="flex gap-2">
@@ -92,7 +91,6 @@ export default function AdminCatalogPanel() {
         </div>
       </div>
 
-      {/* Criar Subcategoria */}
       <div className="space-y-2">
         <h3 className="font-semibold">Nova Subcategoria</h3>
         <div className="flex gap-2">
@@ -111,4 +109,34 @@ export default function AdminCatalogPanel() {
           <input
             type="text"
             placeholder="Nome da subcategoria"
-            className="flex-1 rounded border px-3
+            className="flex-1 rounded border px-3 py-2"
+            value={newSub.nome}
+            onChange={(e) => setNewSub({ ...newSub, nome: e.target.value })}
+          />
+          <button
+            onClick={createSub}
+            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
+            CRIAR SUBCATEGORIA
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="font-semibold">Categorias Ativas</h3>
+        <div className="space-y-3">
+          {categories.map((c: any) => (
+            <div key={c.id} className="rounded border p-3">
+              <p className="font-medium">{c.nome_categoria}</p>
+              <div className="ml-4 mt-1 space-y-1 text-sm text-gray-600">
+                {c.subcategorias_mestre?.map((s: any) => (
+                  <div key={s.id}>• {s.nome_subcategoria}</div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
