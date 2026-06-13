@@ -11,20 +11,16 @@ function AdminContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
 
-  switch (tab) {
-    case 'catalogo':
-      return <AdminCatalogPanel />;
-    case 'aparencia':
-      return <AdminAppearancePanel />;
-    default:
-      return <AdminControlTower />;
-  }
+  if (tab === 'catalogo') return <AdminCatalogPanel />;
+  if (tab === 'aparencia') return <AdminAppearancePanel />;
+  
+  return <AdminControlTower />;
 }
 
 export default function AdminPage() {
   return (
     <AdminMasterShell>
-      <Suspense fallback={<div className="p-8 animate-pulse text-black">Carregando módulo...</div>}>
+      <Suspense fallback={<div className="p-8 text-black">Carregando...</div>}>
         <AdminContent />
       </Suspense>
     </AdminMasterShell>
