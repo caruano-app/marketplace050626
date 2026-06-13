@@ -1,14 +1,3 @@
-'use client';
-import React from 'react';
-import AdminMasterShell from '@/components/admin/admin-master-shell';
-import AdminControlTower from '@/components/admin/admin-control-tower';
-export default function AdminPage() {
-  return (
-    <AdminMasterShell>
-      <AdminControlTower />
-    </AdminMasterShell>
-  );
-}
 import nextDynamic from "next/dynamic";
 import { AdminAppearancePanel } from "@/components/admin/admin-appearance-panel";
 import { AdminCatalogPanel } from "@/components/admin/admin-catalog-panel";
@@ -22,15 +11,18 @@ import { getAdminDashboardData } from "@/lib/data/admin-dashboard";
 
 export const dynamic = "force-dynamic";
 
-const AdminControlTower = nextDynamic(() => import("@/components/admin/admin-control-tower").then((mod) => mod.AdminControlTower), {
-  loading: () => (
-    <div className="grid gap-4">
-      <div className="dashboard-skeleton-card caruano-skeleton" />
-      <div className="dashboard-skeleton-card caruano-skeleton" />
-      <div className="dashboard-skeleton-card caruano-skeleton" />
-    </div>
-  ),
-});
+const AdminControlTower = nextDynamic(
+  () => import("@/components/admin/admin-control-tower").then((mod) => mod.AdminControlTower),
+  {
+    loading: () => (
+      <div className="grid gap-4">
+        <div className="dashboard-skeleton-card caruano-skeleton" />
+        <div className="dashboard-skeleton-card caruano-skeleton" />
+        <div className="dashboard-skeleton-card caruano-skeleton" />
+      </div>
+    ),
+  }
+);
 
 export default async function AdminPage() {
   const { metrics, leads, categorySuggestions, reviews, stores, partnerStores, drivers, products, logs, ecosystem } = await getAdminDashboardData();
