@@ -18,4 +18,5 @@ export default function ProductCard({ product }: any) {
   );
 }
 
+// Exportação nomeada para compatibilidade
 export { ProductCard };
