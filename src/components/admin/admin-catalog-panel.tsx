@@ -49,7 +49,7 @@ export default function AdminCatalogPanel() {
 
   return (
     
-      Gestão de Catálogo
+   <h2>Gestão de Catálogo</h2>
 
       
         {/* Criar Categoria */}
