@@ -1,8 +1,8 @@
 import nextDynamic from "next/dynamic";
-import AdminAppearancePanel from "@/components/admin/admin-appearance-panel";
+import { AdminAppearancePanel } from "@/components/admin/admin-appearance-panel";
 import { AdminCatalogPanel } from "@/components/admin/admin-catalog-panel";
-import AdminContentPanel from "@/components/admin/admin-content-panel";
-import AdminMasterShell from "@/components/admin/admin-master-shell";
+import { AdminContentPanel } from "@/components/admin/admin-content-panel";
+import { AdminMasterShell } from "@/components/admin/admin-master-shell";
 import { SiteHeader } from "@/components/header/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { getAdminAppearanceConfig } from "@/lib/data/admin-appearance";
