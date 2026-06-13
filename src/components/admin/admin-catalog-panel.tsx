@@ -1,302 +1,141 @@
-"use client";
+'use client';
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import type { AdminCategory, AdminSubcategory } from "@/lib/data/admin-catalog";
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { toast } from 'react-hot-toast';
+import { Plus, FolderTree, RefreshCw, Trash2 } from 'lucide-react';
 
-type AdminCatalogPanelProps = {
-  categories: AdminCategory[];
-  subcategories: AdminSubcategory[];
-};
+export default function CatalogManager() {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newCategory, setNewCategory] = useState({ nome: '', nicho: 'geral' });
 
-type CategoryDraft = {
-  nome_categoria: string;
-  slug_categoria: string;
-  tipo_nicho: string;
-};
+  // Busca categorias reais do banco
+  async function fetchCategories() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('categorias_mestre')
+      .select('*')
+      .order('nome_categoria', { ascending: true });
 
-type SubcategoryDraft = {
-  categoria_id: number;
-  nome_subcategoria: string;
-  slug_subcategoria: string;
-};
-
-function categoryFromDraft(category?: AdminCategory): CategoryDraft {
-  return {
-    nome_categoria: category?.nome_categoria || "",
-    slug_categoria: category?.slug_categoria || "",
-    tipo_nicho: category?.tipo_nicho || "geral",
-  };
-}
-
-function subcategoryFromDraft(subcategory?: AdminSubcategory, firstCategoryId = 0): SubcategoryDraft {
-  return {
-    categoria_id: subcategory?.categoria_id || firstCategoryId,
-    nome_subcategoria: subcategory?.nome_subcategoria || "",
-    slug_subcategoria: subcategory?.slug_subcategoria || "",
-  };
-}
-
-function categoryName(category: AdminSubcategory["categorias_mestre"]) {
-  const row = Array.isArray(category) ? category[0] : category;
-  return row?.nome_categoria || "Categoria";
-}
-
-export function AdminCatalogPanel({ categories, subcategories }: AdminCatalogPanelProps) {
-  const router = useRouter();
-  const [categoryDraft, setCategoryDraft] = useState<CategoryDraft>(categoryFromDraft());
-  const [subcategoryDraft, setSubcategoryDraft] = useState<SubcategoryDraft>(subcategoryFromDraft(undefined, categories[0]?.id || 0));
-  const [editingCategories, setEditingCategories] = useState<Record<number, CategoryDraft>>(() =>
-    Object.fromEntries(categories.map((category) => [category.id, categoryFromDraft(category)])),
-  );
-  const [editingSubcategories, setEditingSubcategories] = useState<Record<number, SubcategoryDraft>>(() =>
-    Object.fromEntries(subcategories.map((subcategory) => [subcategory.id, subcategoryFromDraft(subcategory, categories[0]?.id || 0)])),
-  );
-  const [message, setMessage] = useState("");
-  const [isPending, startTransition] = useTransition();
-
-  const categoryOptions = useMemo(() => categories.map((category) => ({
-    id: category.id,
-    label: category.nome_categoria,
-  })), [categories]);
-
-  function refreshCatalog(messageText: string) {
-    setMessage(messageText);
-    router.refresh();
+    if (error) {
+      toast.error('Erro ao carregar categorias');
+    } else {
+      setCategories(data || []);
+    }
+    setLoading(false);
   }
 
-  function requestJson(url: string, method: "POST" | "PATCH" | "DELETE", body?: unknown) {
-    return fetch(url, {
-      method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  }
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-  function createCategory() {
-    setMessage("Criando categoria...");
-    startTransition(async () => {
-      const response = await requestJson("/api/admin/catalog/categories", "POST", categoryDraft);
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setMessage(payload.error || "Nao foi possivel criar categoria.");
-        return;
-      }
-      setCategoryDraft(categoryFromDraft());
-      refreshCatalog("Categoria criada. O Header passa a listar no proximo carregamento.");
-    });
-  }
+  async function handleCreateCategory() {
+    if (!newCategory.nome) return toast.error('Digite o nome da categoria');
 
-  function updateCategory(id: number) {
-    setMessage("Atualizando categoria...");
-    startTransition(async () => {
-      const response = await requestJson(`/api/admin/catalog/categories/${id}`, "PATCH", editingCategories[id]);
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setMessage(payload.error || "Nao foi possivel atualizar categoria.");
-        return;
-      }
-      refreshCatalog("Categoria atualizada.");
-    });
-  }
+    const slug = newCategory.nome.toLowerCase().replace(/ /g, '-');
+    
+    const { error } = await supabase
+      .from('categorias_mestre')
+      .insert([{ 
+        nome_categoria: newCategory.nome, 
+        slug_categoria: slug,
+        tipo_nicho: newCategory.nicho 
+      }]);
 
-  function deleteCategory(id: number) {
-    if (!window.confirm("Excluir esta categoria? O banco pode bloquear se houver produtos vinculados.")) return;
-    setMessage("Excluindo categoria...");
-    startTransition(async () => {
-      const response = await requestJson(`/api/admin/catalog/categories/${id}`, "DELETE");
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setMessage(payload.error || "Nao foi possivel excluir categoria.");
-        return;
-      }
-      refreshCatalog("Categoria excluida.");
-    });
-  }
-
-  function createSubcategory() {
-    setMessage("Criando subcategoria...");
-    startTransition(async () => {
-      const response = await requestJson("/api/admin/catalog/subcategories", "POST", subcategoryDraft);
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setMessage(payload.error || "Nao foi possivel criar subcategoria.");
-        return;
-      }
-      setSubcategoryDraft(subcategoryFromDraft(undefined, categories[0]?.id || 0));
-      refreshCatalog("Subcategoria criada.");
-    });
-  }
-
-  function updateSubcategory(id: number) {
-    setMessage("Atualizando subcategoria...");
-    startTransition(async () => {
-      const response = await requestJson(`/api/admin/catalog/subcategories/${id}`, "PATCH", editingSubcategories[id]);
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setMessage(payload.error || "Nao foi possivel atualizar subcategoria.");
-        return;
-      }
-      refreshCatalog("Subcategoria atualizada.");
-    });
-  }
-
-  function deleteSubcategory(id: number) {
-    if (!window.confirm("Excluir esta subcategoria? O banco pode bloquear se houver produtos vinculados.")) return;
-    setMessage("Excluindo subcategoria...");
-    startTransition(async () => {
-      const response = await requestJson(`/api/admin/catalog/subcategories/${id}`, "DELETE");
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setMessage(payload.error || "Nao foi possivel excluir subcategoria.");
-        return;
-      }
-      refreshCatalog("Subcategoria excluida.");
-    });
+    if (error) {
+      toast.error('Erro ao criar: ' + error.message);
+    } else {
+      toast.success('Categoria criada com sucesso!');
+      setNewCategory({ nome: '', nicho: 'geral' });
+      fetchCategories(); // Atualiza a lista na hora
+    }
   }
 
   return (
-    <section className="rounded-[8px] bg-white p-4 shadow-sm" id="admin-catalogo">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="p-6 bg-white rounded-2xl shadow-sm border border-zinc-100">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <p className="text-sm font-black uppercase text-orange-600">Catalogo</p>
-          <h2 className="mt-1 text-xl font-black uppercase text-neutral-950">Categorias e subcategorias</h2>
-          <p className="mt-1 text-sm font-bold text-neutral-600">Os lojistas selecionam esta arvore mestre. Eles nao criam categorias.</p>
+          <h2 className="text-2xl font-black text-black font-montserrat uppercase tracking-tight">Gestão de Catálogo</h2>
+          <p className="text-zinc-500 text-sm">Cadastre as categorias e subcategorias mestre do Caruano.</p>
         </div>
-        <span className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-black uppercase text-neutral-600">
-          {categories.length} categorias
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-3 rounded-[8px] border border-neutral-200 bg-neutral-50 p-3 lg:grid-cols-[1fr_1fr_180px]">
-        <label className="text-xs font-black uppercase text-neutral-600">
-          Nova categoria
-          <input
-            className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-sm font-bold text-neutral-950"
-            onChange={(event) => setCategoryDraft((current) => ({ ...current, nome_categoria: event.target.value }))}
-            placeholder="Ex: Alimentos"
-            value={categoryDraft.nome_categoria}
-          />
-        </label>
-        <label className="text-xs font-black uppercase text-neutral-600">
-          Nicho / icone visual
-          <input
-            className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-sm font-bold text-neutral-950"
-            onChange={(event) => setCategoryDraft((current) => ({ ...current, tipo_nicho: event.target.value }))}
-            placeholder="alimentacao"
-            value={categoryDraft.tipo_nicho}
-          />
-        </label>
-        <button
-          className="min-h-11 self-end rounded-[8px] bg-[var(--primary)] px-4 text-sm font-black uppercase text-neutral-950 transition active:scale-[0.98] disabled:opacity-60"
-          disabled={isPending}
-          onClick={createCategory}
-          type="button"
+        <button 
+          onClick={fetchCategories}
+          className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
         >
-          Criar
+          <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      <div className="mt-4 grid gap-2">
-        {categories.map((category) => {
-          const draft = editingCategories[category.id] || categoryFromDraft(category);
-          return (
-            <div className="grid gap-2 rounded-[8px] border border-neutral-200 p-3 lg:grid-cols-[1.3fr_1fr_1fr_110px_110px]" key={category.id}>
-              <input
-                className="h-11 rounded-[8px] border border-neutral-300 px-3 text-sm font-bold"
-                onChange={(event) => setEditingCategories((current) => ({ ...current, [category.id]: { ...draft, nome_categoria: event.target.value } }))}
-                value={draft.nome_categoria}
-              />
-              <input
-                className="h-11 rounded-[8px] border border-neutral-300 px-3 text-sm font-bold"
-                onChange={(event) => setEditingCategories((current) => ({ ...current, [category.id]: { ...draft, slug_categoria: event.target.value } }))}
-                value={draft.slug_categoria}
-              />
-              <input
-                className="h-11 rounded-[8px] border border-neutral-300 px-3 text-sm font-bold"
-                onChange={(event) => setEditingCategories((current) => ({ ...current, [category.id]: { ...draft, tipo_nicho: event.target.value } }))}
-                value={draft.tipo_nicho}
-              />
-              <button className="min-h-11 rounded-[8px] bg-neutral-950 px-3 text-xs font-black uppercase text-white" onClick={() => updateCategory(category.id)} type="button">
-                Salvar
-              </button>
-              <button className="min-h-11 rounded-[8px] border border-red-300 px-3 text-xs font-black uppercase text-red-700" onClick={() => deleteCategory(category.id)} type="button">
-                Excluir
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 grid gap-3 rounded-[8px] border border-neutral-200 bg-neutral-50 p-3 lg:grid-cols-[1fr_1fr_180px]">
-        <label className="text-xs font-black uppercase text-neutral-600">
-          Categoria
-          <select
-            className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-sm font-bold text-neutral-950"
-            onChange={(event) => setSubcategoryDraft((current) => ({ ...current, categoria_id: Number(event.target.value) }))}
-            value={subcategoryDraft.categoria_id}
+      {/* Formulário de Criação */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 bg-zinc-50 p-4 rounded-xl border border-dashed border-zinc-200">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-zinc-600 uppercase ml-1">Nome da Categoria</label>
+          <input 
+            type="text"
+            placeholder="Ex: Alimentos, Moda..."
+            className="p-3 rounded-lg border-2 border-zinc-200 focus:border-[#FFC300] outline-none text-black"
+            value={newCategory.nome}
+            onChange={(e) => setNewCategory({...newCategory, nome: e.target.value})}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-zinc-600 uppercase ml-1">Ícone / Nicho</label>
+          <select 
+            className="p-3 rounded-lg border-2 border-zinc-200 focus:border-[#FFC300] outline-none bg-white text-black min-h-[52px]"
+            value={newCategory.nicho}
+            onChange={(e) => setNewCategory({...newCategory, nicho: e.target.value})}
           >
-            {categoryOptions.map((category) => (
-              <option key={category.id} value={category.id}>{category.label}</option>
-            ))}
+            <option value="geral">Geral</option>
+            <option value="moda">Moda</option>
+            <option value="alimentos">Alimentos</option>
+            <option value="servicos">Serviços</option>
           </select>
-        </label>
-        <label className="text-xs font-black uppercase text-neutral-600">
-          Nova subcategoria
-          <input
-            className="mt-2 h-12 w-full rounded-[8px] border border-neutral-300 px-3 text-sm font-bold text-neutral-950"
-            onChange={(event) => setSubcategoryDraft((current) => ({ ...current, nome_subcategoria: event.target.value }))}
-            placeholder="Ex: Queijos"
-            value={subcategoryDraft.nome_subcategoria}
-          />
-        </label>
-        <button
-          className="min-h-11 self-end rounded-[8px] bg-[var(--primary)] px-4 text-sm font-black uppercase text-neutral-950 transition active:scale-[0.98] disabled:opacity-60"
-          disabled={isPending || !categoryOptions.length}
-          onClick={createSubcategory}
-          type="button"
+        </div>
+        <button 
+          onClick={handleCreateCategory}
+          className="bg-[#FFC300] text-black font-bold rounded-lg hover:bg-black hover:text-white transition-all flex items-center justify-center gap-2 h-[52px] mt-5"
         >
-          Criar sub
+          <Plus className="w-5 h-5" /> CRIAR CATEGORIA
         </button>
       </div>
 
-      <div className="mt-4 grid gap-2">
-        {subcategories.map((subcategory) => {
-          const draft = editingSubcategories[subcategory.id] || subcategoryFromDraft(subcategory, categories[0]?.id || 0);
-          return (
-            <div className="grid gap-2 rounded-[8px] border border-neutral-200 p-3 lg:grid-cols-[1fr_1.2fr_1fr_110px_110px]" key={subcategory.id}>
-              <select
-                className="h-11 rounded-[8px] border border-neutral-300 px-3 text-sm font-bold"
-                onChange={(event) => setEditingSubcategories((current) => ({ ...current, [subcategory.id]: { ...draft, categoria_id: Number(event.target.value) } }))}
-                value={draft.categoria_id}
-              >
-                {categoryOptions.map((category) => (
-                  <option key={category.id} value={category.id}>{category.label}</option>
-                ))}
-              </select>
-              <input
-                className="h-11 rounded-[8px] border border-neutral-300 px-3 text-sm font-bold"
-                onChange={(event) => setEditingSubcategories((current) => ({ ...current, [subcategory.id]: { ...draft, nome_subcategoria: event.target.value } }))}
-                value={draft.nome_subcategoria}
-              />
-              <input
-                className="h-11 rounded-[8px] border border-neutral-300 px-3 text-sm font-bold"
-                onChange={(event) => setEditingSubcategories((current) => ({ ...current, [subcategory.id]: { ...draft, slug_subcategoria: event.target.value } }))}
-                placeholder={categoryName(subcategory.categorias_mestre)}
-                value={draft.slug_subcategoria}
-              />
-              <button className="min-h-11 rounded-[8px] bg-neutral-950 px-3 text-xs font-black uppercase text-white" onClick={() => updateSubcategory(subcategory.id)} type="button">
-                Salvar
-              </button>
-              <button className="min-h-11 rounded-[8px] border border-red-300 px-3 text-xs font-black uppercase text-red-700" onClick={() => deleteSubcategory(subcategory.id)} type="button">
-                Excluir
-              </button>
-            </div>
-          );
-        })}
+      {/* Lista de Categorias com Scroll Corrigido */}
+      <div className="space-y-3">
+        <h3 className="font-bold text-black flex items-center gap-2 mb-4">
+          <FolderTree className="w-5 h-5 text-[#FFC300]" /> Categorias Ativas ({categories.length})
+        </h3>
+        
+        {loading ? (
+          <div className="animate-pulse space-y-2">
+            {[1,2,3].map(i => <div key={i} className="h-12 bg-zinc-100 rounded-lg" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {categories.map((cat: any) => (
+              <div key={cat.id} className="flex justify-between items-center p-4 bg-white border border-zinc-200 rounded-xl hover:border-[#FFC300] transition-all group">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-zinc-100 rounded-lg flex items-center justify-center font-bold text-zinc-400 group-hover:bg-[#FFC300] group-hover:text-black transition-colors">
+                    {cat.nome_categoria.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-bold text-black">{cat.nome_categoria}</p>
+                    <p className="text-xs text-zinc-400 uppercase">{cat.tipo_nicho}</p>
+                  </div>
+                </div>
+                <button className="text-zinc-300 hover:text-red-500 transition-colors">
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+            {categories.length === 0 && (
+              <div className="text-center py-10 border-2 border-dashed border-zinc-100 rounded-2xl">
+                <p className="text-zinc-400 italic">Nenhuma categoria cadastrada ainda.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {message ? <p className="mt-3 rounded-[6px] bg-neutral-100 p-3 text-sm font-black text-neutral-700">{message}</p> : null}
-    </section>
+    </div>
   );
 }
